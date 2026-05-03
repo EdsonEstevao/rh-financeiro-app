@@ -220,6 +220,16 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            @php
+                                $statusColors = [
+                                    'paid' => 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+                                    'pending' =>
+                                        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+                                    'overdue' => 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+                                    'cancelled' => 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
+                                ];
+
+                            @endphp
                             @forelse($boletos as $boleto)
                                 <tr
                                     class="hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150

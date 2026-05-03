@@ -158,6 +158,18 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            @php
+                                $statusColors = [
+                                    'approved' => 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+                                    'rejected' => 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+                                    'pending' =>
+                                        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+                                    'refunded' =>
+                                        'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+                                    'chargeback' => 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+                                ];
+
+                            @endphp
                             @forelse($transactions as $transaction)
                                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
                                     <td class="px-6 py-4 whitespace-nowrap">
@@ -199,12 +211,7 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span
-                                            class="px-2 py-1 text-xs font-semibold rounded-full
-                                            @if ($transaction->status === 'approved') bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
-                                            @elseif($transaction->status === 'refunded') bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200
-                                            @elseif($transaction->status === 'rejected') bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
-                                            @elseif($transaction->status === 'chargeback') bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
-                                            @else bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 @endif">
+                                            class="px-2 py-1 text-xs font-semibold rounded-full {{ $statusColors[$transaction->status] ?? 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200' }}">
                                             @if ($transaction->status === 'approved')
                                                 Aprovada
                                             @elseif($transaction->status === 'refunded')

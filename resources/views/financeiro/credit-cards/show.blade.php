@@ -30,12 +30,16 @@
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg mb-6">
                 <div class="p-6">
                     <div class="flex justify-between items-center">
+                        @php
+                            $statusColors = [
+                                'approved' => 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+                                'rejected' => 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+                                'pending' => 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+                            ];
+                        @endphp
                         <div>
                             <span
-                                class="px-3 py-1 text-sm font-semibold rounded-full
-                                @if ($transaction->status === 'approved') bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
-                                @elseif($transaction->status === 'rejected') bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
-                                @else bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 @endif">
+                                class="px-3 py-1 text-sm font-semibold rounded-full {{ $statusColors[$transaction->status] ?? 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200' }}">
                                 {{ ucfirst($transaction->status) }}
                             </span>
                             <span class="ml-3 text-sm text-gray-500 dark:text-gray-400">

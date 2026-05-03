@@ -1,11 +1,497 @@
 <?php
+// app/Http/Controllers/RH/EmployeeController.php
 
 namespace App\Http\Controllers\RH;
 
+use Illuminate\Http\{RedirectResponse, Request};
+use Illuminate\View\View;
+use Illuminate\Support\Facades\{Auth, DB, Hash, Log};
+
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Models\{Department, Employee, User};
+use App\Services\RHService;
 
 class EmployeeController extends Controller
 {
-    //
+    public function __construct(
+        private readonly RHService $rhService
+    ) {
+        $this->middleware(['auth', 'role:admin|rh|gerente']);
+
+        // Permissões granulares
+        $this->middleware('permission:rh.employees.create')->only(['create', 'store']);
+        $this->middleware('permission:rh.employees.edit')->only(['edit', 'update']);
+        $this->middleware('permission:rh.employees.delete')->only(['destroy']);
+
+        // Gerente só pode ver funcionários do seu departamento
+        $this->middleware(function ($request, $next) {
+            if (Auth::user()->hasRole('gerente')) {
+                $employeeId = $request->route('employee')?->id;
+                if ($employeeId) {
+                    $employee = Employee::find($employeeId);
+                    if ($employee && $employee->department_id !== Auth::user()->employee?->department_id) {
+                        abort(403, 'Você não tem permissão para acessar este funcionário.');
+                    }
+                }
+            }
+            return $next($request);
+        })->only(['show', 'edit', 'update', 'destroy']);
+    }
+
+    /**
+     * Display a listing of employees.
+     */
+    public function index(Request $request): View
+    {
+        $query = Employee::with(['user', 'department', 'supervisor']);
+
+        // Gerente vê apenas seu departamento
+        if (Auth::user()->hasRole('gerente')) {
+            $query->where('department_id', Auth::user()->employee?->department_id);
+        }
+
+        // Aplicar filtros
+        $this->applyFilters($query, $request);
+
+        // Estatísticas
+        $stats = $this->getStats($query);
+
+        $employees = $query->latest('hire_date')->paginate(15)->withQueryString();
+
+        // Dados para filtros
+        $departments = Department::orderBy('name')->get();
+
+        return view('rh.employees.index', compact('employees', 'stats', 'departments'));
+    }
+
+    /**
+     * Show the form for creating a new employee.
+     */
+    public function create(): View
+    {
+        $departments = Department::where('is_active', true)->orderBy('name')->get();
+        $supervisors = Employee::with('user')
+            ->where('status', 'active')
+            ->whereIn('position', ['Gerente', 'Coordenador', 'Supervisor', 'Tech Lead'])
+            ->get();
+
+        return view('rh.employees.create', compact('departments', 'supervisors'));
+    }
+
+    /**
+     * Store a newly created employee.
+     */
+    public function store(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            // Dados do usuário
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'cpf' => ['required', 'string', 'max:14', 'unique:users'],
+            'rg' => ['nullable', 'string', 'max:20'],
+            'birth_date' => ['nullable', 'date', 'before:today'],
+            'phone' => ['nullable', 'string', 'max:20'],
+
+            // Dados profissionais
+            'position' => ['required', 'string', 'max:100'],
+            'department_id' => ['required', 'exists:departments,id'],
+            'supervisor_id' => ['nullable', 'exists:employees,id'],
+            'salary' => ['required', 'numeric', 'min:0'],
+            'hire_date' => ['required', 'date'],
+            'employment_type' => ['required', 'in:clt,pj,intern,temporary,contractor'],
+            'workload_hours' => ['nullable', 'integer', 'min:0', 'max:44'],
+
+            // Benefícios
+            'has_health_plan' => ['boolean'],
+            'has_dental_plan' => ['boolean'],
+            'has_meal_voucher' => ['boolean'],
+            'has_food_voucher' => ['boolean'],
+            'has_transportation_voucher' => ['boolean'],
+            'meal_voucher_value' => ['nullable', 'numeric', 'min:0'],
+            'food_voucher_value' => ['nullable', 'numeric', 'min:0'],
+            'transportation_voucher_value' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Criar usuário
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'cpf' => $validated['cpf'],
+                'rg' => $validated['rg'] ?? null,
+                'birth_date' => $validated['birth_date'] ?? null,
+                'phone' => $validated['phone'] ?? null,
+                'password' => Hash::make($this->generatePassword()),
+                'is_active' => true,
+            ]);
+
+            // Atribuir role de funcionário
+            $user->assignRole('funcionario');
+
+            // Criar funcionário
+            $employeeData = array_merge($validated, [
+                'user_id' => $user->id,
+                'registration_number' => Employee::generateRegistrationNumber(),
+                'created_by' => Auth::id(),
+                'status' => 'active',
+            ]);
+
+            $employee = Employee::create($employeeData);
+
+            DB::commit();
+
+            // Log da atividade
+            activity()
+                ->performedOn($employee)
+                ->causedBy(Auth::user())
+                ->withProperties([
+                    'name' => $user->name,
+                    'position' => $employee->position,
+                    'department' => $employee->department?->name,
+                ])
+                ->log('Funcionário criado');
+
+            Log::info('Employee created', [
+                'employee_id' => $employee->id,
+                'user_id' => Auth::id()
+            ]);
+
+            return redirect()
+                ->route('rh.employees.show', $employee)
+                ->with('success', "Funcionário {$user->name} cadastrado com sucesso!");
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Failed to create employee', [
+                'error' => $e->getMessage(),
+                'data' => $request->except(['_token']),
+                'user_id' => Auth::id()
+            ]);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Erro ao cadastrar funcionário. Por favor, tente novamente.');
+        }
+    }
+
+    /**
+     * Display the specified employee.
+     */
+    public function show(Employee $employee): View
+    {
+        $employee->load([
+            'user',
+            'department',
+            'supervisor.user',
+            'subordinates.user',
+            'documents' => fn($q) => $q->latest()->limit(10),
+            'payrolls' => fn($q) => $q->latest()->limit(12),
+        ]);
+
+        // Estatísticas do funcionário
+        $employeeStats = [
+            'total_payrolls' => $employee->payrolls()->count(),
+            'total_earned' => $employee->payrolls()->sum('net_salary'),
+            'last_salary' => $employee->payrolls()->latest()->first()?->net_salary,
+            'documents_count' => $employee->documents()->count(),
+            'pending_documents' => $employee->documents()->where('status', 'pending')->count(),
+            'expiring_documents' => $employee->documents()
+                ->where('expiration_date', '<=', now()->addDays(30))
+                ->where('expiration_date', '>=', now())
+                ->count(),
+            'vacation_days_remaining' => $employee->vacation_days_available,
+            'years_of_service' => $employee->years_of_service,
+        ];
+
+        return view('rh.employees.show', compact('employee', 'employeeStats'));
+    }
+
+    /**
+     * Show the form for editing the specified employee.
+     */
+    public function edit(Employee $employee): View
+    {
+        $employee->load('user', 'department', 'supervisor');
+
+        $departments = Department::where('is_active', true)->orderBy('name')->get();
+        $supervisors = Employee::with('user')
+            ->where('status', 'active')
+            ->where('id', '!=', $employee->id)
+            ->get();
+
+        return view('rh.employees.edit', compact('employee', 'departments', 'supervisors'));
+    }
+
+    /**
+     * Update the specified employee.
+     */
+    public function update(Request $request, Employee $employee): RedirectResponse
+    {
+        $validated = $request->validate([
+            // Dados do usuário
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'unique:users,email,' . $employee->user_id],
+            'cpf' => ['required', 'string', 'max:14', 'unique:users,cpf,' . $employee->user_id],
+            'phone' => ['nullable', 'string', 'max:20'],
+
+            // Dados profissionais
+            'position' => ['required', 'string', 'max:100'],
+            'department_id' => ['required', 'exists:departments,id'],
+            'supervisor_id' => ['nullable', 'exists:employees,id'],
+            'salary' => ['required', 'numeric', 'min:0'],
+            'status' => ['required', 'in:active,inactive,vacation,leave,terminated,suspended'],
+            'employment_type' => ['required', 'in:clt,pj,intern,temporary,contractor'],
+            'workload_hours' => ['nullable', 'integer', 'min:0', 'max:44'],
+
+            // Datas
+            'termination_date' => ['nullable', 'date', 'required_if:status,terminated'],
+            'vacation_start_date' => ['nullable', 'date', 'required_if:status,vacation'],
+            'vacation_end_date' => ['nullable', 'date', 'after:vacation_start_date'],
+
+            // Observações
+            'observations' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Atualizar usuário
+            $employee->user->update([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'cpf' => $validated['cpf'],
+                'phone' => $validated['phone'],
+            ]);
+
+            // Registrar histórico salarial se houve mudança
+            if ($employee->salary != $validated['salary']) {
+                $salaryHistory = $employee->salary_history ?? [];
+                $salaryHistory[] = [
+                    'previous_salary' => $employee->salary,
+                    'new_salary' => $validated['salary'],
+                    'changed_at' => now()->toDateTimeString(),
+                    'changed_by' => Auth::id(),
+                ];
+                $validated['salary_history'] = $salaryHistory;
+            }
+
+            // Atualizar funcionário
+            $employee->update(array_merge($validated, [
+                'updated_by' => Auth::id(),
+            ]));
+
+            DB::commit();
+
+            activity()
+                ->performedOn($employee)
+                ->causedBy(Auth::user())
+                ->withProperties(['changes' => $validated])
+                ->log('Funcionário atualizado');
+
+            return redirect()
+                ->route('rh.employees.show', $employee)
+                ->with('success', 'Funcionário atualizado com sucesso!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Failed to update employee', [
+                'error' => $e->getMessage(),
+                'employee_id' => $employee->id
+            ]);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Erro ao atualizar funcionário.');
+        }
+    }
+
+    /**
+     * Remove the specified employee.
+     */
+    public function destroy(Employee $employee): RedirectResponse
+    {
+        try {
+            DB::beginTransaction();
+
+            $userName = $employee->user->name;
+
+            // Soft delete do funcionário
+            $employee->delete();
+
+            // Desativar usuário
+            $employee->user->update(['is_active' => false]);
+
+            DB::commit();
+
+            activity()
+                ->performedOn($employee)
+                ->causedBy(Auth::user())
+                ->log('Funcionário desligado');
+
+            return redirect()
+                ->route('rh.employees.index')
+                ->with('success', "Funcionário {$userName} desligado com sucesso!");
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Failed to delete employee', [
+                'error' => $e->getMessage(),
+                'employee_id' => $employee->id
+            ]);
+
+            return back()->with('error', 'Erro ao desligar funcionário.');
+        }
+    }
+
+    /**
+     * Restore a soft-deleted employee.
+     */
+    public function restore(int $id): RedirectResponse
+    {
+        try {
+            $employee = Employee::withTrashed()->findOrFail($id);
+
+            DB::beginTransaction();
+
+            $employee->restore();
+            $employee->user->update(['is_active' => true]);
+
+            DB::commit();
+
+            activity()
+                ->performedOn($employee)
+                ->causedBy(Auth::user())
+                ->log('Funcionário restaurado');
+
+            return back()->with('success', 'Funcionário restaurado com sucesso!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Failed to restore employee', [
+                'error' => $e->getMessage(),
+                'employee_id' => $id
+            ]);
+
+            return back()->with('error', 'Erro ao restaurar funcionário.');
+        }
+    }
+
+    /**
+     * Export employees to PDF.
+     */
+    public function exportPDF(Request $request)
+    {
+        $query = Employee::with(['user', 'department']);
+
+        if (Auth::user()->hasRole('gerente')) {
+            $query->where('department_id', Auth::user()->employee?->department_id);
+        }
+
+        $this->applyFilters($query, $request);
+        $employees = $query->get();
+
+        $pdf = \PDF::loadView('rh.employees.pdf', [
+            'employees' => $employees,
+            'generated_at' => now()->format('d/m/Y H:i')
+        ]);
+
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->download('funcionarios-' . now()->format('d-m-Y') . '.pdf');
+    }
+
+    /**
+     * API: Search employees.
+     */
+    public function search(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $search = $request->get('q');
+
+        $employees = Employee::with('user')
+            ->where(function ($q) use ($search) {
+                $q->whereHas('user', function ($uq) use ($search) {
+                    $uq->where('name', 'like', "%{$search}%")
+                       ->orWhere('cpf', 'like', "%{$search}%");
+                })->orWhere('registration_number', 'like', "%{$search}%");
+            })
+            ->where('status', 'active')
+            ->limit(10)
+            ->get()
+            ->map(fn($e) => [
+                'id' => $e->id,
+                'name' => $e->user->name,
+                'cpf' => $e->user->cpf,
+                'position' => $e->position,
+                'department' => $e->department?->name,
+            ]);
+
+        return response()->json($employees);
+    }
+
+    /**
+     * Apply filters to query.
+     */
+    private function applyFilters($query, Request $request): void
+    {
+        $query->when($request->filled('search'), function ($q) use ($request) {
+            $q->where(function ($sq) use ($request) {
+                $sq->whereHas('user', function ($uq) use ($request) {
+                    $uq->where('name', 'like', "%{$request->search}%")
+                       ->orWhere('email', 'like', "%{$request->search}%")
+                       ->orWhere('cpf', 'like', "%{$request->search}%");
+                })
+                ->orWhere('position', 'like', "%{$request->search}%")
+                ->orWhere('registration_number', 'like', "%{$request->search}%");
+            });
+        });
+
+        $query->when($request->filled('department'), function ($q) use ($request) {
+            $q->where('department_id', $request->department);
+        });
+
+        $query->when($request->filled('status'), function ($q) use ($request) {
+            $q->where('status', $request->status);
+        });
+
+        $query->when($request->filled('employment_type'), function ($q) use ($request) {
+            $q->where('employment_type', $request->employment_type);
+        });
+    }
+
+    /**
+     * Get employee statistics.
+     */
+    private function getStats($query): array
+    {
+        $baseQuery = Employee::query();
+
+        if (Auth::user()->hasRole('gerente')) {
+            $baseQuery->where('department_id', Auth::user()->employee?->department_id);
+        }
+
+        return [
+            'total' => $baseQuery->count(),
+            'active' => $baseQuery->where('status', 'active')->count(),
+            'on_vacation' => $baseQuery->where('status', 'vacation')->count(),
+            'on_leave' => $baseQuery->where('status', 'leave')->count(),
+            'terminated' => $baseQuery->where('status', 'terminated')->count(),
+            'total_payroll' => $baseQuery->where('status', 'active')->sum('salary'),
+            'new_this_month' => $baseQuery->whereMonth('hire_date', now()->month)->count(),
+            'avg_salary' => $baseQuery->where('status', 'active')->avg('salary') ?? 0,
+        ];
+    }
+
+    /**
+     * Generate a random password for new employees.
+     */
+    private function generatePassword(): string
+    {
+        return substr(str_shuffle('abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!@#$%'), 0, 12);
+    }
 }

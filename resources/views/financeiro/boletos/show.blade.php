@@ -30,14 +30,19 @@
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg mb-6">
                 <div class="p-6">
                     <div class="flex justify-between items-center">
+                        @php
+                            $statusColors = [
+                                'paid' => 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+                                'pending' => 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+                                'overdue' => 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+                                'cancelled' => 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
+                                'draft' => 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
+                            ];
+                        @endphp
                         <div>
                             <span
-                                class="px-3 py-1 text-sm font-semibold rounded-full
-                                @if ($boleto->status === 'paid') bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
-                                @elseif($boleto->status === 'pending') bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
-                                @elseif($boleto->status === 'overdue') bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
-                                @else bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200 @endif">
-                                {{ ucfirst($boleto->status === 'paid' ? 'Pago' : ($boleto->status === 'pending' ? 'Pendente' : ($boleto->status === 'overdue' ? 'Vencido' : $boleto->status))) }}
+                                class="px-3 py-1 text-sm font-semibold rounded-full {{ $statusColors[$boleto->status] }}"></span>
+                            {{ ucfirst($boleto->status === 'paid' ? 'Pago' : ($boleto->status === 'pending' ? 'Pendente' : ($boleto->status === 'overdue' ? 'Vencido' : ($boleto->status === 'cancelled' ? 'Cancelado' : 'Rascunho')))) }}
                             </span>
                             <span class="ml-3 text-sm text-gray-500 dark:text-gray-400">
                                 Criado em {{ $boleto->created_at->format('d/m/Y H:i') }}
@@ -91,8 +96,15 @@
                             </div>
                             <div>
                                 <dt class="text-xs text-gray-500 dark:text-gray-400">Vencimento</dt>
-                                <dd
-                                    class="text-sm font-medium @if ($boleto->isOverdue()) text-red-600 dark:text-red-400 @else text-gray-900 dark:text-gray-100 @endif">
+                                @php
+                                    $isOverdue = [
+                                        false => 'text-gray-900 dark:text-gray-100',
+                                        true => 'text-red-600 dark:text-red-400',
+                                    ];
+                                @endphp
+
+
+                                <dd class="text-sm font-medium {{ $isOverdue[$boleto->isOverdue()] }}">
                                     {{ $boleto->due_date->format('d/m/Y') }}
                                     @if ($boleto->isOverdue())
                                         <span class="text-xs">({{ $boleto->days_overdue }} dias atraso)</span>

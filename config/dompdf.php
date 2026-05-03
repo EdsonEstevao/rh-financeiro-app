@@ -214,7 +214,8 @@ return [
          *
          * @var int
          */
-        'dpi' => 96,
+        // 'dpi' => 96,
+        'dpi' => 150,
 
         /**
          * Enable embedded PHP
@@ -233,7 +234,8 @@ return [
          *
          * @var bool
          */
-        'enable_php' => false,
+        // 'enable_php' => false,
+        'enable_php' => true,
 
         /**
          * Enable inline JavaScript
@@ -245,7 +247,8 @@ return [
          *
          * @var bool
          */
-        'enable_javascript' => true,
+        // 'enable_javascript' => true,
+        'enable_javascript' => false,
 
         /**
          * Enable remote file access
@@ -267,7 +270,8 @@ return [
          *
          * @var bool
          */
-        'enable_remote' => false,
+        // 'enable_remote' => false,
+        'enable_remote' => true,
 
         /**
          * List of allowed remote hosts

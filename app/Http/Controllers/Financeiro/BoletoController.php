@@ -5,19 +5,21 @@ namespace App\Http\Controllers\Financeiro;
 
 use Illuminate\Http\{RedirectResponse, Request};
 use Illuminate\View\View;
-use Illuminate\Support\Facades\{DB, Log};
+use Illuminate\Support\Facades\{Auth, DB, Log};
 use Carbon\Carbon;
 
 use App\Http\Controllers\Controller;
 use App\Models\{Boleto, User};
 use App\Services\{BillingService, ReportService};
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Actions\GenerateBoleto;
+use Barryvdh\DomPDF\Facade\PDF;
 
 class BoletoController extends Controller
 {
     public function __construct(
         private readonly BillingService $billingService,
-        private readonly ReportService $reportService
+        private readonly ReportService $reportService,
+        private readonly GenerateBoleto $generateBoleto
     ) {
         $this->middleware(['auth', 'role:admin|financeiro|consultor']);
 
@@ -94,63 +96,82 @@ class BoletoController extends Controller
         ]);
 
         try {
-            DB::beginTransaction();
-
-            // Preparar dados do boleto
-            $boletoData = array_merge($validated, [
-                'boleto_number' => Boleto::generateBoletoNumber(),
-                'our_number' => $this->billingService->generateOurNumber(),
-                'created_by' => auth()->id(),
-                'status' => 'pending',
-                'total_amount' => $this->billingService->calculateTotalAmount(
-                    $validated['amount'],
-                    $validated['discount_amount'] ?? 0,
-                    $validated['fine_percentage'] ?? 0,
-                    $validated['interest_percentage'] ?? 0
-                ),
-            ]);
-
-            // Gerar código de barras e linha digitável (mock)
-            $boletoData['barcode'] = $this->billingService->generateBarcode();
-            $boletoData['digitable_line'] = $this->billingService->generateDigitableLine($boletoData['barcode']);
-
-            $boleto = Boleto::create($boletoData);
-
-            DB::commit();
-
-            // Log da atividade
-            activity()
-                ->performedOn($boleto)
-                ->causedBy(auth()->user())
-                ->withProperties([
-                    'amount' => $boleto->amount,
-                    'due_date' => $boleto->due_date->format('d/m/Y'),
-                ])
-                ->log('Boleto criado');
-
-            Log::info('Boleto created', [
-                'boleto_id' => $boleto->id,
-                'user_id' => auth()->id(),
-                'amount' => $boleto->amount
-            ]);
+            // Executar a ação
+            $boleto = $this->generateBoleto->execute(
+                data: $validated,
+                createdBy: Auth::user()
+            );
 
             return redirect()
                 ->route('financeiro.boletos.show', $boleto)
-                ->with('success', 'Boleto #' . $boleto->boleto_number . ' gerado com sucesso!');
+                ->with('success', 'Boleto gerado com sucesso!');
 
         } catch (\Exception $e) {
-            DB::rollBack();
-
-            Log::error('Failed to create boleto', [
-                'error' => $e->getMessage(),
-                'data' => $request->except(['_token']),
-                'user_id' => auth()->id()
-            ]);
-
             return back()
                 ->withInput()
-                ->with('error', 'Erro ao gerar boleto. Por favor, tente novamente.');
+                ->with('error', $e->getMessage());
         }
+
+
+
+        // try {
+        //     DB::beginTransaction();
+
+        //     // Preparar dados do boleto
+        //     $boletoData = array_merge($validated, [
+        //         'boleto_number' => Boleto::generateBoletoNumber(),
+        //         'our_number' => $this->billingService->generateOurNumber(),
+        //         'created_by' => Auth::id(),
+        //         'status' => 'pending',
+        //         'total_amount' => $this->billingService->calculateTotalAmount(
+        //             $validated['amount'],
+        //             $validated['discount_amount'] ?? 0,
+        //             $validated['fine_percentage'] ?? 0,
+        //             $validated['interest_percentage'] ?? 0
+        //         ),
+        //     ]);
+
+        //     // Gerar código de barras e linha digitável (mock)
+        //     $boletoData['barcode'] = $this->billingService->generateBarcode();
+        //     $boletoData['digitable_line'] = $this->billingService->generateDigitableLine($boletoData['barcode']);
+
+        //     $boleto = Boleto::create($boletoData);
+
+        //     DB::commit();
+
+        //     // Log da atividade
+        //     activity()
+        //         ->performedOn($boleto)
+        //         ->causedBy(Auth::user())
+        //         ->withProperties([
+        //             'amount' => $boleto->amount,
+        //             'due_date' => $boleto->due_date->format('d/m/Y'),
+        //         ])
+        //         ->log('Boleto criado');
+
+        //     Log::info('Boleto created', [
+        //         'boleto_id' => $boleto->id,
+        //         'user_id' => Auth::id(),
+        //         'amount' => $boleto->amount
+        //     ]);
+
+        //     return redirect()
+        //         ->route('financeiro.boletos.show', $boleto)
+        //         ->with('success', 'Boleto #' . $boleto->boleto_number . ' gerado com sucesso!');
+
+        // } catch (\Exception $e) {
+        //     DB::rollBack();
+
+        //     Log::error('Failed to create boleto', [
+        //         'error' => $e->getMessage(),
+        //         'data' => $request->except(['_token']),
+        //         'user_id' => Auth::id()
+        //     ]);
+
+        //     return back()
+        //         ->withInput()
+        //         ->with('error', 'Erro ao gerar boleto. Por favor, tente novamente.');
+        // }
     }
 
     /**
@@ -208,7 +229,7 @@ class BoletoController extends Controller
 
             $boleto->update(array_merge($validated, [
                 'total_amount' => $validated['amount'],
-                'updated_by' => auth()->id(),
+                'updated_by' => Auth::id(),
             ]));
 
             DB::commit();
@@ -216,7 +237,7 @@ class BoletoController extends Controller
             // Log da atividade
             activity()
                 ->performedOn($boleto)
-                ->causedBy(auth()->user())
+                ->causedBy(Auth::user())
                 ->withProperties([
                     'changes' => [
                         'before' => array_intersect_key($originalData, $validated),
@@ -235,7 +256,7 @@ class BoletoController extends Controller
             Log::error('Failed to update boleto', [
                 'error' => $e->getMessage(),
                 'boleto_id' => $boleto->id,
-                'user_id' => auth()->id()
+                'user_id' => Auth::id()
             ]);
 
             return back()
@@ -266,7 +287,7 @@ class BoletoController extends Controller
 
             activity()
                 ->performedOn($boleto)
-                ->causedBy(auth()->user())
+                ->causedBy(Auth::user())
                 ->log('Boleto excluído');
 
             return redirect()
@@ -302,7 +323,7 @@ class BoletoController extends Controller
 
             activity()
                 ->performedOn($boleto)
-                ->causedBy(auth()->user())
+                ->causedBy(Auth::user())
                 ->withProperties(['paid_amount' => $boleto->total_with_charges])
                 ->log('Boleto marcado como pago');
 
@@ -342,7 +363,7 @@ class BoletoController extends Controller
 
             activity()
                 ->performedOn($boleto)
-                ->causedBy(auth()->user())
+                ->causedBy(Auth::user())
                 ->withProperties(['reason' => $reason])
                 ->log('Boleto cancelado');
 
@@ -496,5 +517,95 @@ class BoletoController extends Controller
                   });
             })->count(),
         ];
+    }
+
+    /**
+     * Novos Metodos para funcionalidades avançadas
+     */
+      /**
+     * Generate recurring boletos.
+     */
+    public function storeRecurring(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'user_id' => ['required', 'exists:users,id'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'description' => ['required', 'string'],
+            'installments' => ['required', 'integer', 'min:2', 'max:36'],
+            'frequency' => ['required', 'in:weekly,monthly,quarterly,yearly'],
+        ]);
+
+        try {
+            $result = $this->generateBoleto->executeRecurring(
+                data: $validated,
+                installments: $validated['installments'],
+                frequency: $validated['frequency'],
+                createdBy: Auth::user()
+            );
+
+            return redirect()
+                ->route('financeiro.boletos.show', $result['parent_boleto'])
+                ->with('success', "{$result['total']} boletos gerados com sucesso!");
+
+        } catch (\Exception $e) {
+            return back()
+                ->withInput()
+                ->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Generate boletos in batch.
+     */
+    public function storeBatch(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'boletos' => ['required', 'array', 'min:1'],
+            'boletos.*.user_id' => ['required', 'exists:users,id'],
+            'boletos.*.amount' => ['required', 'numeric', 'min:0.01'],
+            'boletos.*.description' => ['required', 'string'],
+        ]);
+
+        try {
+            $result = $this->generateBoleto->executeBatch(
+                boletosData: $validated['boletos'],
+                createdBy: Auth::user()
+            );
+
+            $message = "{$result['total_created']} boletos gerados com sucesso!";
+
+            if ($result['total_failed'] > 0) {
+                $message .= " {$result['total_failed']} falhas.";
+            }
+
+            return redirect()
+                ->route('financeiro.boletos.index')
+                ->with('success', $message);
+
+        } catch (\Exception $e) {
+            return back()
+                ->withInput()
+                ->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Preview boleto before generating.
+     */
+    public function preview(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $validated = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'due_date' => ['required', 'date'],
+        ]);
+
+        $preview = $this->generateBoleto->preview($validated);
+        $calculation = $this->generateBoleto->calculateBoletoTotal($validated);
+
+        return response()->json([
+            'success' => true,
+            'preview' => $preview,
+            'calculation' => $calculation,
+        ]);
     }
 }

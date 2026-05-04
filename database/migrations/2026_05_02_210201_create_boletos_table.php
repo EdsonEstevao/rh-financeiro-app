@@ -39,6 +39,9 @@ return new class extends Migration
             $table->string('beneficiary_document', 20)->nullable();
             $table->text('beneficiary_address')->nullable();
 
+            // Metodo de Pagamento
+            $table->enum('payment_method', ['boleto', 'pix', 'card', 'bank_transfer'])->default('boleto');
+
             // Valores
             $table->decimal('amount', 12, 2); // Valor principal
             $table->decimal('discount_amount', 10, 2)->default(0);

@@ -60,10 +60,13 @@
                                     value="{{ old('due_date', $boleto->due_date->format('Y-m-d')) }}" required
                                     class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                             </div>
+                            @php
+                                use App\Enums\BoletoStatus;
+                            @endphp
                             <div>
                                 <label
                                     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
-                                <select name="status"
+                                {{-- <select name="status"
                                     class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm"
                                     @if (in_array($boleto->status, ['paid', 'cancelled'])) disabled @endif>
                                     <option value="pending" {{ $boleto->status === 'pending' ? 'selected' : '' }}>
@@ -72,6 +75,23 @@
                                     </option>
                                     <option value="cancelled" {{ $boleto->status === 'cancelled' ? 'selected' : '' }}>
                                         Cancelado</option>
+                                </select> --}}
+                                <select name="status">
+                                    @foreach (BoletoStatus::toSelectArray() as $value => $label)
+                                        <option value="{{ $value }}"
+                                            {{ $boleto->status->value === $value ? 'selected' : '' }}>
+                                            {{ $label }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <select name="payment_method">
+                                    @foreach (PaymentMethod::groupedForSelect() as $group => $methods)
+                                        <optgroup label="{{ $group }}">
+                                            @foreach ($methods as $value => $label)
+                                                <option value="{{ $value }}">{{ $label }}</option>
+                                            @endforeach
+                                        </optgroup>
+                                    @endforeach
                                 </select>
                             </div>
                             <div class="md:col-span-3">

@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\{Model, SoftDeletes};
 use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
 use Carbon\Carbon;
 
+use App\Enums\{BoletoStatus, PaymentMethod};
+
 
 class Boleto extends Model
 {
@@ -83,6 +85,8 @@ class Boleto extends Model
         'attachments',
         'notes',
         'metadata',
+        //novas colunas
+        'payment_method'
     ];
 
     protected $casts = [
@@ -114,6 +118,10 @@ class Boleto extends Model
         'attachments' => 'json',
         'cnab_data' => 'json',
         'metadata' => 'json',
+        // Novo campo
+        'payment_method' => PaymentMethod::class,
+        'status' => BoletoStatus::class,
+
     ];
 
     /**
@@ -159,10 +167,10 @@ class Boleto extends Model
     /**
      * Scope para boletos pendentes
      */
-    public function scopePending($query)
-    {
-        return $query->where('status', 'pending');
-    }
+    // public function scopePending($query)
+    // {
+    //     return $query->where('status', 'pending');
+    // }
 
     /**
      * Scope para boletos pagos
@@ -175,14 +183,14 @@ class Boleto extends Model
     /**
      * Scope para boletos vencidos
      */
-    public function scopeOverdue($query)
-    {
-        return $query->where('status', 'overdue')
-                    ->orWhere(function ($q) {
-                        $q->where('status', 'pending')
-                          ->where('due_date', '<', now());
-                    });
-    }
+    // public function scopeOverdue($query)
+    // {
+    //     return $query->where('status', 'overdue')
+    //                 ->orWhere(function ($q) {
+    //                     $q->where('status', 'pending')
+    //                       ->where('due_date', '<', now());
+    //                 });
+    // }
 
     /**
      * Scope para boletos cancelados
@@ -283,5 +291,22 @@ class Boleto extends Model
         $random = str_pad(mt_rand(1, 999999), 6, '0', STR_PAD_LEFT);
 
         return "{$prefix}-{$date}-{$random}";
+    }
+
+    // Usar o enum para validações
+    public function canBeCancelled(): bool
+    {
+        return $this->status->canBeCancelled();
+    }
+
+    // Usar o enum para escopos
+    public function scopePending($query)
+    {
+        return $query->where('status', BoletoStatus::pendingStatuses());
+    }
+
+    public function scopeOverdue($query)
+    {
+        return $query->where('status', BoletoStatus::overdueStatuses());
     }
 }

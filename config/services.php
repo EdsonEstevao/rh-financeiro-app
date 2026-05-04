@@ -35,4 +35,33 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Payment Gateway Configuration
+    |--------------------------------------------------------------------------
+    */
+    'payment_gateway' => [
+        'api_key' => env('PAYMENT_GATEWAY_API_KEY', ''),
+        'api_secret' => env('PAYMENT_GATEWAY_API_SECRET', ''),
+        'api_url' => env('PAYMENT_GATEWAY_API_URL', 'https://api.payment-gateway.com/v1'),
+        'environment' => env('PAYMENT_GATEWAY_ENVIRONMENT', 'sandbox'), // sandbox ou production
+
+        // Configurações específicas por bandeira
+        'credit_card' => [
+            'max_installments' => 12,
+            'min_installment_value' => 10.00,
+            'default_fee_percentage' => 3.0,
+        ],
+
+        'boleto' => [
+            'default_due_days' => 3,
+            'max_amount' => 50000.00,
+        ],
+
+        'pix' => [
+            'expiration_minutes' => 30,
+            'max_amount' => 10000.00,
+        ],
+    ],
+
 ];

@@ -16,7 +16,12 @@ class UserController extends Controller
     {
         $this->middleware(['auth', 'role:admin']);
 
-        $this->authorizeResource(User::class, 'user');
+        // $this->authorizeResource(User::class, 'user');
+        // Autorização granular por ação
+        $this->middleware('permission:admin.users.view')->only(['index', 'show']);
+        $this->middleware('permission:admin.users.create')->only(['create', 'store']);
+        $this->middleware('permission:admin.users.edit')->only(['edit', 'update']);
+
     }
 
     /**

@@ -1,21 +1,24 @@
 <?php
+// app/Models/User.php
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Attributes\{Casts, Fillable, Hidden};
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\{HasMany, HasOne};
+use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\Traits\HasRoles;
 
-use App\Models\{Boleto, CreditCardTransaction, Employee};
-use Database\Factories\UserFactory;
+class User extends Authenticatable
+{
+    use HasFactory, Notifiable, SoftDeletes, HasRoles;
 
-#[Fillable(['name', 'email', 'password',
-// Campos adicionados
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
         'cpf',
         'rg',
         'phone',
@@ -33,50 +36,27 @@ use Database\Factories\UserFactory;
         'push_notifications',
         'two_factor_enabled',
         'notes',
-])]
-#[Hidden(['password', 'remember_token'])]
-// #[Casts([
-//     'email_verified_at' => 'datetime',
-//     'password' => 'hashed',
-//     'is_active' => 'boolean',
-//     'last_login_at' => 'datetime',
-//     'email_notifications' => 'boolean',
-//     'sms_notifications' => 'boolean',
-//     'push_notifications' => 'boolean',
-//     'two_factor_enabled' => 'boolean',
-//     'preferences' => 'json',
-// ])]
-class User extends Authenticatable
-{
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, HasRoles, SoftDeletes;
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'is_active' => 'boolean',
+        'last_login_at' => 'datetime',
+        'email_notifications' => 'boolean',
+        'sms_notifications' => 'boolean',
+        'push_notifications' => 'boolean',
+        'two_factor_enabled' => 'boolean',
+        'preferences' => 'json',
+    ];
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'is_active' => 'boolean',
-            'last_login_at' => 'datetime',
-            'email_notifications' => 'boolean',
-            'sms_notifications' => 'boolean',
-            'push_notifications' => 'boolean',
-            'two_factor_enabled' => 'boolean',
-            'preferences' => 'json',
-        ];
-    }
-
-
-    /**
-     * Relationships
-     */
-    /**
-     * Funcionário associado ao usuário
+     * Funcionário associado ao usuário.
      */
     public function employee(): HasOne
     {
@@ -84,7 +64,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Boletos do usuário
+     * Boletos do usuário.
      */
     public function boletos(): HasMany
     {
@@ -92,15 +72,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Boletos criados pelo usuário (se for admin/financeiro)
-     */
-    public function createdBoletos(): HasMany
-    {
-        return $this->hasMany(Boleto::class, 'created_by');
-    }
-
-    /**
-     * Transações de cartão de crédito do usuário
+     * Transações de cartão de crédito do usuário.
      */
     public function creditCardTransactions(): HasMany
     {
@@ -108,63 +80,25 @@ class User extends Authenticatable
     }
 
     /**
-     * Transações de cartão criadas pelo usuário
+     * Atividades realizadas pelo usuário (Spatie Activity Log).
      */
-    public function createdCreditCardTransactions(): HasMany
+    public function actions(): HasMany
     {
-        return $this->hasMany(CreditCardTransaction::class, 'created_by');
+        return $this->hasMany(Activity::class, 'causer_id')
+            ->where('causer_type', self::class);
     }
 
     /**
-     * Documentos que o usuário fez upload
+     * Atividades onde o usuário foi o alvo (subject).
      */
-    public function uploadedDocuments(): HasMany
+    public function activitiesAsSubject(): HasMany
     {
-        return $this->hasMany(EmployeeDocument::class, 'uploaded_by');
+        return $this->hasMany(Activity::class, 'subject_id')
+            ->where('subject_type', self::class);
     }
 
     /**
-     * Documentos que o usuário aprovou
-     */
-    public function approvedDocuments(): HasMany
-    {
-        return $this->hasMany(EmployeeDocument::class, 'approved_by');
-    }
-
-    /**
-     * Funcionários que o usuário criou
-     */
-    public function createdEmployees(): HasMany
-    {
-        return $this->hasMany(Employee::class, 'created_by');
-    }
-
-    /**
-     * Funcionários que o usuário atualizou
-     */
-    public function updatedEmployees(): HasMany
-    {
-        return $this->hasMany(Employee::class, 'updated_by');
-    }
-
-    /**
-     * Folhas de pagamento processadas pelo usuário
-     */
-    public function processedPayrolls(): HasMany
-    {
-        return $this->hasMany(Payroll::class, 'processed_by');
-    }
-
-    /**
-     * Departamentos que o usuário gerencia
-     */
-    public function managedDepartments(): HasMany
-    {
-        return $this->hasMany(Department::class, 'manager_id');
-    }
-
-    /**
-     * Helper methods para roles
+     * Helper methods para roles.
      */
     public function getProfileAttribute(): string
     {
@@ -202,7 +136,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Scope para usuários ativos
+     * Scope para usuários ativos.
      */
     public function scopeActive($query)
     {
@@ -210,9 +144,9 @@ class User extends Authenticatable
     }
 
     /**
-     * Scope para busca
+     * Scope para busca.
      */
-    public function scopeSearch($query, $search)
+    public function scopeSearch($query, string $search)
     {
         return $query->where(function ($q) use ($search) {
             $q->where('name', 'like', "%{$search}%")

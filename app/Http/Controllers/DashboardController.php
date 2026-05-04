@@ -7,32 +7,53 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Auth;
 
-use App\Models\{Boleto, CreditCardTransaction, Employee};
+use App\Models\{Boleto, CreditCardTransaction, Employee, User};
 
 class DashboardController extends Controller
 {
+    /**
+     * Display the appropriate dashboard based on user role.
+     */
     public function index(Request $request): View
     {
-        // $request->user()->authorizeRoles(['admin', 'rh', 'financeiro', 'consultor', 'gerente', 'funcionario']);
         $user = $request->user();
 
+        // Redirecionar para o dashboard correto baseado no perfil
+        if ($user->hasRole('admin')) {
+            return $this->admin();
+        }
 
+        if ($user->hasRole('rh')) {
+            return $this->rh();
+        }
 
-        return match($user->profile) {
-            'admin' => $this->adminDashboard(),
-            'rh' => $this->rhDashboard(),
-            'financeiro' => $this->financeiroDashboard(),
-            'consultor' => $this->consultorDashboard(),
-            'gerente' => $this->gerenteDashboard(),
-            'funcionario' => $this->funcionarioDashboard($user),
-            default => view('dashboard'),
-        };
+        if ($user->hasRole('financeiro')) {
+            return $this->financeiro();
+        }
+
+        if ($user->hasRole('consultor')) {
+            return $this->consultor();
+        }
+
+        if ($user->hasRole('gerente')) {
+            return $this->gerente();
+        }
+
+        if ($user->hasRole('funcionario')) {
+            return $this->funcionario();
+        }
+
+        // Dashboard padrão para usuários sem perfil específico
+        return view('dashboard');
     }
 
-    private function adminDashboard(): View
+    /**
+     * Admin dashboard.
+     */
+    public function admin(): View
     {
         $stats = [
-            'total_users' => \App\Models\User::count(),
+            'total_users' => User::count(),
             'total_employees' => Employee::count(),
             'active_employees' => Employee::where('status', 'active')->count(),
             'pending_boletos' => Boleto::where('status', 'pending')->count(),
@@ -48,7 +69,10 @@ class DashboardController extends Controller
         return view('admin.dashboard', compact('stats'));
     }
 
-    private function rhDashboard(): View
+    /**
+     * RH dashboard.
+     */
+    public function rh(): View
     {
         $stats = [
             'total_employees' => Employee::count(),
@@ -67,19 +91,24 @@ class DashboardController extends Controller
         return view('rh.dashboard', compact('stats'));
     }
 
-    private function financeiroDashboard(): View
+    /**
+     * Financeiro dashboard.
+     */
+    public function financeiro(): View
     {
         $stats = [
             'pending_boletos' => Boleto::where('status', 'pending')->count(),
-            'overdue_boletos' => Boleto::where('status', 'overdue')->count(),
+            'overdue_boletos' => Boleto::where('status', 'overdue')
+                ->orWhere(function ($q) {
+                    $q->where('status', 'pending')->where('due_date', '<', now());
+                })->count(),
             'paid_today' => Boleto::where('status', 'paid')
                 ->whereDate('paid_at', today())
                 ->sum('amount'),
             'monthly_revenue' => Boleto::where('status', 'paid')
                 ->whereMonth('paid_at', now()->month)
                 ->sum('amount'),
-            'credit_card_transactions' => CreditCardTransaction::whereDate('created_at', today())
-                ->count(),
+            'credit_card_transactions' => CreditCardTransaction::whereDate('created_at', today())->count(),
             'recent_boletos' => Boleto::with('user')
                 ->latest()
                 ->take(10)
@@ -89,38 +118,55 @@ class DashboardController extends Controller
         return view('financeiro.dashboard', compact('stats'));
     }
 
-    private function consultorDashboard(): View
+    /**
+     * Consultor dashboard.
+     */
+    public function consultor(): View
     {
         return view('consultor.dashboard', [
-            'clients' => Employee::where('status', 'active')
-                ->with('user')
+            'clients' => User::role('funcionario')
+                ->where('is_active', true)
+                ->with('employee.department')
                 ->paginate(10)
         ]);
     }
 
-    private function gerenteDashboard(): View
+    /**
+     * Gerente dashboard.
+     */
+    public function gerente(): View
     {
+        $departmentId = Auth::user()->employee?->department_id;
+
         return view('gerente.dashboard', [
-            'team' => Employee::where('department_id', Auth::user()->employee?->department_id)
-                ->with('user')
-                ->get(),
-            'department_stats' => [
-                'total' => Employee::where('department_id', Auth::user()->employee?->department_id)->count(),
-                'active' => Employee::where('department_id', Auth::user()->employee?->department_id)
+            'team' => $departmentId
+                ? Employee::where('department_id', $departmentId)->with('user')->get()
+                : collect(),
+            'department_stats' => $departmentId ? [
+                'total' => Employee::where('department_id', $departmentId)->count(),
+                'active' => Employee::where('department_id', $departmentId)
                     ->where('status', 'active')->count(),
-            ]
+            ] : ['total' => 0, 'active' => 0],
         ]);
     }
 
-    private function funcionarioDashboard($user): View
+    /**
+     * Funcionário dashboard.
+     */
+    public function funcionario(): View
     {
+        $user = Auth::user();
+        $employee = $user->employee;
+
         return view('funcionario.dashboard', [
-            'employee' => $user->employee,
+            'employee' => $employee,
             'boletos' => $user->boletos()->latest()->take(5)->get(),
-            'payroll_history' => \App\Models\Payroll::where('employee_id', $user->employee?->id)
-                ->latest()
-                ->take(6)
-                ->get(),
+            'payroll_history' => $employee
+                ? \App\Models\Payroll::where('employee_id', $employee->id)
+                    ->latest()
+                    ->take(6)
+                    ->get()
+                : collect(),
         ]);
     }
 }

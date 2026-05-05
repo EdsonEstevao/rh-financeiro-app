@@ -111,7 +111,7 @@ return new class extends Migration
             // Avaliações
             $table->date('last_evaluation_date')->nullable();
             $table->decimal('last_evaluation_score', 3, 2)->nullable();
-            $table->text('evaluation_comments')->nullable();
+            $table->text('evaluation_comments')->nullable(); // Comentários da última avaliação
 
             // Observações e Metadados
             $table->text('observations')->nullable();

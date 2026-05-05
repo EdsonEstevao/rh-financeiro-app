@@ -3,8 +3,9 @@
 
 namespace App\Traits;
 
-use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
+use Illuminate\Support\Facades\Auth;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 trait LogsActivityCustom
 {
@@ -15,19 +16,41 @@ trait LogsActivityCustom
         return LogOptions::defaults()
             ->logAll()
             ->logOnlyDirty()
-            ->dontSubmitEmptyLogs()
-            ->logExcept(['password', 'password_confirmation', 'remember_token'])
+            ->dontLogEmptyChanges() // Mudou de dontSubmitEmptyLogs() no v5
             ->setDescriptionForEvent(function (string $eventName) {
-                $modelName = class_basename($this);
-                $identifier = $this->name ?? $this->title ?? $this->id;
-
-                return match($eventName) {
-                    'created' => "{$modelName} '{$identifier}' foi criado",
-                    'updated' => "{$modelName} '{$identifier}' foi atualizado",
-                    'deleted' => "{$modelName} '{$identifier}' foi deletado",
-                    'restored' => "{$modelName} '{$identifier}' foi restaurado",
-                    default => "{$modelName} '{$identifier}' foi {$eventName}",
-                };
+                $identifier = $this->getAuditIdentifier();
+                $model = class_basename($this);
+                return "{$model} '{$identifier}' {$this->ptBrLabel($eventName)}";
             });
+    }
+
+    protected function getAuditIdentifier(): string
+    {
+        // if (isset($this->user) && $this->user) {
+        //     return $this->user->name;
+        // }
+        if (Auth::check()) {
+            return Auth::user()->name ?? (string) Auth::id();
+        }
+
+        foreach (['name', 'title', 'number', 'code', 'id', 'uuid'] as $attr) {
+            if (!empty($this->$attr)) {
+                return (string) $this->$attr;
+            }
+        }
+        // return (string) ($this->id ?? 'desconhecido');
+        return (string) ($this->name ?? $this->id ?? 'desconhecido');
+    }
+
+    protected function ptBrLabel(string $event): string
+    {
+        return match($event) {
+            'created' => 'foi criado',
+            'updated' => 'foi atualizado',
+            'deleted' => 'foi deletado',
+            'restored' => 'foi restaurado',
+            'forceDeleted' => 'foi removido permanentemente',
+            default => "teve evento '{$event}'"
+        };
     }
 }

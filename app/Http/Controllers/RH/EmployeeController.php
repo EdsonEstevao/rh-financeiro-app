@@ -5,10 +5,11 @@ namespace App\Http\Controllers\RH;
 
 use Illuminate\Http\{RedirectResponse, Request};
 use Illuminate\View\View;
-use Illuminate\Support\Facades\{Auth, DB, Hash, Log};
+use Illuminate\Support\Facades\{Auth, DB};
 
 use App\Http\Controllers\Controller;
-use App\Models\{Department, Employee, User};
+use App\Models\{Department, Employee};
+use App\Http\Requests\EmployeeRequest;
 use App\Services\RHService;
 
 class EmployeeController extends Controller
@@ -25,10 +26,14 @@ class EmployeeController extends Controller
 
         // Gerente só pode ver funcionários do seu departamento
         $this->middleware(function ($request, $next) {
+
+
             if (Auth::user()->hasRole('gerente')) {
-                $employeeId = $request->route('employee')?->id;
+                // $employeeId = $request->route('employees')?->id;
+                $employeeId = (int) $request->input('id') ?? (int)  $request->input('employee_id');
+
                 if ($employeeId) {
-                    $employee = Employee::find($employeeId);
+                    $employee = Employee::find($employeeId, ['id', 'department_id']);
                     if ($employee && $employee->department_id !== Auth::user()->employee?->department_id) {
                         abort(403, 'Você não tem permissão para acessar este funcionário.');
                     }
@@ -59,7 +64,7 @@ class EmployeeController extends Controller
         $employees = $query->latest('hire_date')->paginate(15)->withQueryString();
 
         // Dados para filtros
-        $departments = Department::orderBy('name')->get();
+        $departments = Department::orderBy('name', 'asc')->get();
 
         return view('rh.employees.index', compact('employees', 'stats', 'departments'));
     }
@@ -67,114 +72,26 @@ class EmployeeController extends Controller
     /**
      * Show the form for creating a new employee.
      */
-    public function create(): View
+     public function create()
     {
-        $departments = Department::where('is_active', true)->orderBy('name')->get();
-        $supervisors = Employee::with('user')
-            ->where('status', 'active')
-            ->whereIn('position', ['Gerente', 'Coordenador', 'Supervisor', 'Tech Lead'])
-            ->get();
-
-        return view('rh.employees.create', compact('departments', 'supervisors'));
+        return view('rh.employees.create', [
+            'departments' => Department::query()->orderBy('name', 'asc')->get(),
+            'supervisors' => Employee::query()->with('user:id,name,email')->orderByDesc('id')->limit(200)->get(),
+        ]);
     }
 
     /**
      * Store a newly created employee.
      */
-    public function store(Request $request): RedirectResponse
+    // public function store(Request $request): RedirectResponse
+    public function store(EmployeeRequest $request)
     {
-        $validated = $request->validate([
-            // Dados do usuário
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'cpf' => ['required', 'string', 'max:14', 'unique:users'],
-            'rg' => ['nullable', 'string', 'max:20'],
-            'birth_date' => ['nullable', 'date', 'before:today'],
-            'phone' => ['nullable', 'string', 'max:20'],
+        // dd($request->validated());
+        $employee = $this->rhService->createEmployee($request->validated());
 
-            // Dados profissionais
-            'position' => ['required', 'string', 'max:100'],
-            'department_id' => ['required', 'exists:departments,id'],
-            'supervisor_id' => ['nullable', 'exists:employees,id'],
-            'salary' => ['required', 'numeric', 'min:0'],
-            'hire_date' => ['required', 'date'],
-            'employment_type' => ['required', 'in:clt,pj,intern,temporary,contractor'],
-            'workload_hours' => ['nullable', 'integer', 'min:0', 'max:44'],
-
-            // Benefícios
-            'has_health_plan' => ['boolean'],
-            'has_dental_plan' => ['boolean'],
-            'has_meal_voucher' => ['boolean'],
-            'has_food_voucher' => ['boolean'],
-            'has_transportation_voucher' => ['boolean'],
-            'meal_voucher_value' => ['nullable', 'numeric', 'min:0'],
-            'food_voucher_value' => ['nullable', 'numeric', 'min:0'],
-            'transportation_voucher_value' => ['nullable', 'numeric', 'min:0'],
-        ]);
-
-        try {
-            DB::beginTransaction();
-
-            // Criar usuário
-            $user = User::create([
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-                'cpf' => $validated['cpf'],
-                'rg' => $validated['rg'] ?? null,
-                'birth_date' => $validated['birth_date'] ?? null,
-                'phone' => $validated['phone'] ?? null,
-                'password' => Hash::make($this->generatePassword()),
-                'is_active' => true,
-            ]);
-
-            // Atribuir role de funcionário
-            $user->assignRole('funcionario');
-
-            // Criar funcionário
-            $employeeData = array_merge($validated, [
-                'user_id' => $user->id,
-                'registration_number' => Employee::generateRegistrationNumber(),
-                'created_by' => Auth::id(),
-                'status' => 'active',
-            ]);
-
-            $employee = Employee::create($employeeData);
-
-            DB::commit();
-
-            // Log da atividade
-            activity()
-                ->performedOn($employee)
-                ->causedBy(Auth::user())
-                ->withProperties([
-                    'name' => $user->name,
-                    'position' => $employee->position,
-                    'department' => $employee->department?->name,
-                ])
-                ->log('Funcionário criado');
-
-            Log::info('Employee created', [
-                'employee_id' => $employee->id,
-                'user_id' => Auth::id()
-            ]);
-
-            return redirect()
-                ->route('rh.employees.show', $employee)
-                ->with('success', "Funcionário {$user->name} cadastrado com sucesso!");
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            Log::error('Failed to create employee', [
-                'error' => $e->getMessage(),
-                'data' => $request->except(['_token']),
-                'user_id' => Auth::id()
-            ]);
-
-            return back()
-                ->withInput()
-                ->with('error', 'Erro ao cadastrar funcionário. Por favor, tente novamente.');
-        }
+        return redirect()
+            ->route('rh.employees.advanced.edit', $employee)
+            ->with('success', 'Funcionário criado. Complete os detalhes avançados.');
     }
 
     /**
@@ -216,7 +133,7 @@ class EmployeeController extends Controller
     {
         $employee->load('user', 'department', 'supervisor');
 
-        $departments = Department::where('is_active', true)->orderBy('name')->get();
+        $departments = Department::where('is_active', true)->orderBy('name', 'asc')->get();
         $supervisors = Employee::with('user')
             ->where('status', 'active')
             ->where('id', '!=', $employee->id)
@@ -359,7 +276,15 @@ class EmployeeController extends Controller
             DB::beginTransaction();
 
             $employee->restore();
-            $employee->user->update(['is_active' => true]);
+            // $employee->user->update(['is_active' => true]);
+
+            $employee->employee->user->update(['is_active' => true]);
+            // if ($employee->employee) {
+            //     $employee->employee()->withTrashed()->restore();
+            //     $employee->employee()->update(['is_active' => true]);
+            // }
+
+
 
             DB::commit();
 
@@ -476,13 +401,13 @@ class EmployeeController extends Controller
         }
 
         return [
-            'total' => $baseQuery->count(),
-            'active' => $baseQuery->where('status', 'active')->count(),
-            'on_vacation' => $baseQuery->where('status', 'vacation')->count(),
-            'on_leave' => $baseQuery->where('status', 'leave')->count(),
-            'terminated' => $baseQuery->where('status', 'terminated')->count(),
+            'total' => $baseQuery->count('id'),
+            'active' => $baseQuery->where('status', 'active')->count('id'),
+            'on_vacation' => $baseQuery->where('status', 'vacation')->count('id'),
+            'on_leave' => $baseQuery->where('status', 'leave')->count('id'),
+            'terminated' => $baseQuery->where('status', 'terminated')->count('id'),
             'total_payroll' => $baseQuery->where('status', 'active')->sum('salary'),
-            'new_this_month' => $baseQuery->whereMonth('hire_date', now()->month)->count(),
+            'new_this_month' => $baseQuery->whereMonth('hire_date', now()->month, true, '>=')->count('id'),
             'avg_salary' => $baseQuery->where('status', 'active')->avg('salary') ?? 0,
         ];
     }

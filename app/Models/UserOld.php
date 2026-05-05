@@ -46,7 +46,7 @@ use Database\Factories\UserFactory;
 //     'two_factor_enabled' => 'boolean',
 //     'preferences' => 'json',
 // ])]
-class User extends Authenticatable
+class UserOld extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, HasRoles, SoftDeletes;

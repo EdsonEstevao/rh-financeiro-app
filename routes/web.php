@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\{DashboardController, ProfileController};
 use App\Http\Controllers\Admin\{AuditController, SettingsController, UserController};
-use App\Http\Controllers\RH\{DocumentController, EmployeeController, PayrollController as RHPayrollController, ReportController as RHReportController};
+use App\Http\Controllers\RH\{DocumentController, EmployeeAdvancedController, EmployeeController, PayrollController as RHPayrollController, ReportController as RHReportController, UserSearchController};
 use App\Http\Controllers\Financeiro\{BoletoController, CreditCardController, ReportController as FinanceiroReportController};
 
 /*
@@ -122,6 +122,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     Route::get('/benefits', [RHReportController::class, 'benefits'])->name('benefits');
                     Route::get('/terminations', [RHReportController::class, 'terminations'])->name('terminations');
                 });
+
+                 // Avançado (tela e update separado)
+                Route::get('employees/{employee}/advanced', [EmployeeAdvancedController::class, 'edit'])
+                    ->name('employees.advanced.edit');
+
+                Route::put('employees/{employee}/advanced', [EmployeeAdvancedController::class, 'update'])
+                    ->name('employees.advanced.update');
+
+                // Autocomplete usuários
+                Route::get('/rh/users/search', [UserSearchController::class, 'index'])
+                            ->name('users.search');
+
+
+
             });
     });
 

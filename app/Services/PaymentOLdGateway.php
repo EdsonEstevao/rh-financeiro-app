@@ -1,5 +1,5 @@
 <?php
-// app/Services/PaymentGateway.php
+// app/Services/PaymentOldGateway.php
 
 namespace App\Services;
 
@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\{Http, Log};
 
 use App\Models\CreditCardTransaction;
 
-class PaymentGateway
+class PaymentOLdGateway
 {
     private string $apiKey;
     private string $apiUrl;
@@ -15,7 +15,7 @@ class PaymentGateway
     public function __construct()
     {
         $this->apiKey = config('services.payment_gateway.api_key');
-        $this->apiUrl = config('services.payment_gateway.url');
+        // $this->apiUrl = config('services.payment_gateway.url');
     }
 
     public function processCreditCard(array $data): CreditCardTransaction

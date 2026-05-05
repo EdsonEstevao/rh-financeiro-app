@@ -1,5 +1,5 @@
 <?php
-// app/Http/Controllers/Financeiro/CreditCardController.php
+// app/Http/Controllers/Financeiro/CreditCardOldController.php
 
 namespace App\Http\Controllers\Financeiro;
 
@@ -13,7 +13,7 @@ use App\Models\{CreditCardTransaction, User};
 use App\Services\PaymentGateway;
 use Barryvdh\DomPDF\Facade\PDF;
 
-class CreditCardController extends Controller
+class CreditCardOldController extends Controller
 {
     public function __construct(
         private readonly PaymentGateway $paymentGateway

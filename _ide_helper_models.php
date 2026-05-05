@@ -33,21 +33,22 @@ namespace App\Models{
  * @property string|null $beneficiary_name
  * @property string|null $beneficiary_document
  * @property string|null $beneficiary_address
+ * @property \App\Enums\PaymentMethod $payment_method
  * @property numeric $amount
  * @property numeric $discount_amount
  * @property numeric|null $discount_percentage
- * @property string|null $discount_limit_date
+ * @property \Illuminate\Support\Carbon|null $discount_limit_date
  * @property numeric $fine_amount
  * @property numeric $fine_percentage
  * @property numeric $interest_amount
  * @property numeric $interest_percentage
  * @property numeric $other_charges
  * @property numeric $total_amount
- * @property string $issue_date
- * @property string $due_date
- * @property string|null $processed_at
- * @property string|null $paid_at
- * @property string|null $cancelled_at
+ * @property \Illuminate\Support\Carbon $issue_date
+ * @property \Illuminate\Support\Carbon $due_date
+ * @property \Illuminate\Support\Carbon|null $processed_at
+ * @property \Illuminate\Support\Carbon|null $paid_at
+ * @property \Illuminate\Support\Carbon|null $cancelled_at
  * @property string|null $bank_code
  * @property string|null $bank_name
  * @property string|null $agency
@@ -59,36 +60,51 @@ namespace App\Models{
  * @property string $description
  * @property string|null $instructions
  * @property string|null $additional_info
- * @property string $status
+ * @property \App\Enums\BoletoStatus $status
  * @property string|null $status_reason
  * @property numeric|null $paid_amount
- * @property string|null $credit_date
+ * @property \Illuminate\Support\Carbon|null $credit_date
  * @property string|null $remessa_file
  * @property string|null $retorno_file
- * @property string|null $cnab_data
- * @property int $email_sent
- * @property string|null $email_sent_at
- * @property int $sms_sent
- * @property string|null $sms_sent_at
+ * @property array<array-key, mixed>|null $cnab_data
+ * @property bool $email_sent
+ * @property \Illuminate\Support\Carbon|null $email_sent_at
+ * @property bool $sms_sent
+ * @property \Illuminate\Support\Carbon|null $sms_sent_at
  * @property int $days_overdue_notification
- * @property int $is_recurring
+ * @property bool $is_recurring
  * @property string|null $recurrence_rule
- * @property string|null $recurrence_start
- * @property string|null $recurrence_end
+ * @property \Illuminate\Support\Carbon|null $recurrence_start
+ * @property \Illuminate\Support\Carbon|null $recurrence_end
  * @property int|null $recurrence_count
  * @property int|null $parent_boleto_id
  * @property string|null $category
- * @property string|null $tags
+ * @property array<array-key, mixed>|null $tags
  * @property string|null $reference
  * @property string|null $pdf_path
- * @property string|null $attachments
+ * @property array<array-key, mixed>|null $attachments
  * @property string|null $notes
- * @property string|null $metadata
+ * @property array<array-key, mixed>|null $metadata
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string|null $deleted_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Boleto> $childBoletos
+ * @property-read int|null $child_boletos_count
+ * @property-read \App\Models\User|null $createdBy
+ * @property-read int $days_overdue
+ * @property-read float $total_with_charges
+ * @property-read Boleto|null $parentBoleto
+ * @property-read \App\Models\User|null $updatedBy
+ * @property-read \App\Models\User|null $user
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Boleto cancelled()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Boleto dueToday()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Boleto forPeriod($startDate, $endDate)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Boleto newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Boleto newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Boleto onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Boleto overdue()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Boleto paid()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Boleto pending()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Boleto query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Boleto whereAccount($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Boleto whereAdditionalInfo($value)
@@ -145,6 +161,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Boleto wherePayerPhone($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Boleto wherePayerState($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Boleto wherePayerZipCode($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Boleto wherePaymentMethod($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Boleto wherePdfPath($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Boleto whereProcessedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Boleto whereRecurrenceCount($value)
@@ -164,6 +181,8 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Boleto whereUpdatedBy($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Boleto whereUserId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Boleto whereWallet($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Boleto withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Boleto withoutTrashed()
  */
 	class Boleto extends \Eloquent {}
 }
@@ -185,8 +204,8 @@ namespace App\Models{
  * @property numeric $net_amount
  * @property int $installments
  * @property numeric|null $installment_amount
- * @property int $is_installment
- * @property string|null $installments_details
+ * @property bool $is_installment
+ * @property array<array-key, mixed>|null $installments_details
  * @property string $card_holder_name
  * @property string|null $card_last_digits
  * @property string|null $card_bin
@@ -208,45 +227,60 @@ namespace App\Models{
  * @property string|null $billing_country
  * @property string $description
  * @property string|null $category
- * @property string|null $items
+ * @property array<array-key, mixed>|null $items
  * @property string|null $order_id
  * @property string $status
  * @property string|null $status_reason
  * @property string|null $gateway_status
- * @property string|null $authorized_at
- * @property string|null $captured_at
- * @property string|null $refunded_at
- * @property string|null $expected_payment_date
+ * @property \Illuminate\Support\Carbon|null $authorized_at
+ * @property \Illuminate\Support\Carbon|null $captured_at
+ * @property \Illuminate\Support\Carbon|null $refunded_at
+ * @property \Illuminate\Support\Carbon|null $expected_payment_date
  * @property numeric|null $refunded_amount
  * @property string|null $refund_reason
  * @property string|null $refund_id
- * @property int $has_chargeback
+ * @property bool $has_chargeback
  * @property numeric|null $chargeback_amount
- * @property string|null $chargeback_date
+ * @property \Illuminate\Support\Carbon|null $chargeback_date
  * @property string|null $chargeback_reason
  * @property string|null $gateway
- * @property string|null $gateway_request
- * @property string|null $gateway_response
+ * @property array<array-key, mixed>|null $gateway_request
+ * @property array<array-key, mixed>|null $gateway_response
  * @property string|null $gateway_error
  * @property numeric|null $fraud_score
- * @property int|null $fraud_approved
- * @property string|null $antifraud_data
- * @property int $is_recurring
+ * @property bool|null $fraud_approved
+ * @property array<array-key, mixed>|null $antifraud_data
+ * @property bool $is_recurring
  * @property string|null $recurrence_id
  * @property int|null $recurrence_count
  * @property string|null $callback_url
  * @property string|null $return_url
  * @property string|null $receipt_path
- * @property string|null $attachments
+ * @property array<array-key, mixed>|null $attachments
  * @property string|null $notes
- * @property string|null $metadata
- * @property string|null $custom_fields
+ * @property array<array-key, mixed>|null $metadata
+ * @property array<array-key, mixed>|null $custom_fields
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string|null $deleted_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read \App\Models\User|null $createdBy
+ * @property-read float $effective_fee_percentage
+ * @property-read float $installment_value
+ * @property-read string $masked_card_number
+ * @property-read \App\Models\User|null $user
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditCardTransaction approved()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditCardTransaction byBrand($brand)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditCardTransaction byGateway($gateway)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditCardTransaction chargeback()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditCardTransaction forPeriod($startDate, $endDate)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditCardTransaction newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditCardTransaction newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditCardTransaction onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditCardTransaction pending()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditCardTransaction query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditCardTransaction refunded()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditCardTransaction rejected()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditCardTransaction today()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditCardTransaction whereAmount($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditCardTransaction whereAntifraudData($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditCardTransaction whereAttachments($value)
@@ -321,6 +355,8 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditCardTransaction whereTransactionId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditCardTransaction whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditCardTransaction whereUserId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditCardTransaction withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditCardTransaction withoutTrashed()
  */
 	class CreditCardTransaction extends \Eloquent {}
 }
@@ -338,14 +374,29 @@ namespace App\Models{
  * @property string|null $phone
  * @property string|null $location
  * @property int|null $capacity
- * @property int $is_active
- * @property string|null $metadata
+ * @property bool $is_active
+ * @property array<array-key, mixed>|null $metadata
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string|null $deleted_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Employee> $activeEmployees
+ * @property-read int|null $active_employees_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Department> $children
+ * @property-read int|null $children_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Employee> $employees
+ * @property-read int|null $employees_count
+ * @property-read float $budget_available
+ * @property-read float $budget_used
+ * @property-read \App\Models\User|null $manager
+ * @property-read Department|null $parent
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Payroll> $payrolls
+ * @property-read int|null $payrolls_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Department active()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Department newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Department newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Department onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Department query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Department search($search)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Department whereBudget($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Department whereCapacity($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Department whereCode($value)
@@ -362,6 +413,8 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Department whereParentId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Department wherePhone($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Department whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Department withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Department withoutTrashed()
  */
 	class Department extends \Eloquent {}
 }
@@ -381,14 +434,14 @@ namespace App\Models{
  * @property numeric $salary
  * @property string $salary_type
  * @property numeric|null $benefits_value
- * @property string|null $salary_history
- * @property string $hire_date
- * @property string|null $termination_date
- * @property string|null $probation_end_date
- * @property string|null $last_promotion_date
+ * @property array<array-key, mixed>|null $salary_history
+ * @property \Illuminate\Support\Carbon $hire_date
+ * @property \Illuminate\Support\Carbon|null $termination_date
+ * @property \Illuminate\Support\Carbon|null $probation_end_date
+ * @property \Illuminate\Support\Carbon|null $last_promotion_date
  * @property string|null $rg
  * @property string|null $issuer
- * @property string|null $birth_date
+ * @property \Illuminate\Support\Carbon|null $birth_date
  * @property string|null $gender
  * @property string|null $marital_status
  * @property string|null $nationality
@@ -415,43 +468,75 @@ namespace App\Models{
  * @property string|null $voter_id
  * @property string|null $military_id
  * @property string|null $photo_url
- * @property int $has_dependents
- * @property string|null $dependents_info
+ * @property bool $has_dependents
+ * @property array<array-key, mixed>|null $dependents_info
  * @property string|null $education_level
  * @property string|null $institution
  * @property string|null $course
  * @property string|null $graduation_year
- * @property int $has_health_plan
- * @property int $has_dental_plan
- * @property int $has_life_insurance
- * @property int $has_meal_voucher
- * @property int $has_food_voucher
- * @property int $has_transportation_voucher
- * @property int $has_gym_pass
+ * @property bool $has_health_plan
+ * @property bool $has_dental_plan
+ * @property bool $has_life_insurance
+ * @property bool $has_meal_voucher
+ * @property bool $has_food_voucher
+ * @property bool $has_transportation_voucher
+ * @property bool $has_gym_pass
  * @property numeric|null $meal_voucher_value
  * @property numeric|null $food_voucher_value
  * @property numeric|null $transportation_voucher_value
  * @property string $status
- * @property string|null $vacation_start_date
- * @property string|null $vacation_end_date
+ * @property \Illuminate\Support\Carbon|null $vacation_start_date
+ * @property \Illuminate\Support\Carbon|null $vacation_end_date
  * @property int $vacation_days_available
  * @property int $sick_days_available
- * @property string|null $last_evaluation_date
+ * @property \Illuminate\Support\Carbon|null $last_evaluation_date
  * @property numeric|null $last_evaluation_score
  * @property string|null $evaluation_comments
  * @property string|null $observations
- * @property string|null $skills
- * @property string|null $certifications
- * @property string|null $languages
- * @property string|null $metadata
+ * @property array<array-key, mixed>|null $skills
+ * @property array<array-key, mixed>|null $certifications
+ * @property array<array-key, mixed>|null $languages
+ * @property array<array-key, mixed>|null $metadata
  * @property int|null $created_by
  * @property int|null $updated_by
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string|null $deleted_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
+ * @property-read int|null $activities_as_subject_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\EmployeeDocument> $approvedDocuments
+ * @property-read int|null $approved_documents_count
+ * @property-read \App\Models\User|null $createdBy
+ * @property-read \App\Models\Department|null $department
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\EmployeeDocument> $documents
+ * @property-read int|null $documents_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\EmployeeDocument> $expiredDocuments
+ * @property-read int|null $expired_documents_count
+ * @property-read string $cpf
+ * @property-read string $email
+ * @property-read string $name
+ * @property-read float $years_of_service
+ * @property-read \App\Models\Payroll|null $latestPayroll
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Payroll> $payrolls
+ * @property-read int|null $payrolls_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\EmployeeDocument> $pendingDocuments
+ * @property-read int|null $pending_documents_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Employee> $subordinates
+ * @property-read int|null $subordinates_count
+ * @property-read Employee|null $supervisor
+ * @property-read \App\Models\User|null $updatedBy
+ * @property-read \App\Models\User|null $user
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Employee active()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Employee birthdayThisMonth()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Employee newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Employee newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Employee onLeave()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Employee onProbation()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Employee onVacation()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Employee onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Employee query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Employee search($search)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Employee terminated()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Employee whereAccount($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Employee whereAccountType($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Employee whereAddress($value)
@@ -533,6 +618,8 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Employee whereWorkSchedule($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Employee whereWorkloadHours($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Employee whereZipCode($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Employee withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Employee withoutTrashed()
  */
 	class Employee extends \Eloquent {}
 }
@@ -552,26 +639,42 @@ namespace App\Models{
  * @property string $file_mime_type
  * @property int $file_size
  * @property string $storage_disk
- * @property string|null $document_date
- * @property string|null $expiration_date
- * @property string|null $notification_date
+ * @property \Illuminate\Support\Carbon|null $document_date
+ * @property \Illuminate\Support\Carbon|null $expiration_date
+ * @property \Illuminate\Support\Carbon|null $notification_date
  * @property string $status
  * @property int|null $approved_by
- * @property string|null $approved_at
+ * @property \Illuminate\Support\Carbon|null $approved_at
  * @property string|null $rejection_reason
  * @property int $version
- * @property int $is_current
+ * @property bool $is_current
  * @property int|null $previous_version_id
- * @property string|null $tags
- * @property string|null $metadata
+ * @property array<array-key, mixed>|null $tags
+ * @property array<array-key, mixed>|null $metadata
  * @property string|null $notes
- * @property int $is_private
- * @property int $requires_approval
+ * @property bool $is_private
+ * @property bool $requires_approval
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string|null $deleted_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read \App\Models\User|null $approvedBy
+ * @property-read \App\Models\Employee|null $employee
+ * @property-read int|null $days_until_expiration
+ * @property-read string $file_size_formatted
+ * @property-read string $file_url
+ * @property-read string $full_path
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EmployeeDocument> $newerVersions
+ * @property-read int|null $newer_versions_count
+ * @property-read EmployeeDocument|null $previousVersion
+ * @property-read \App\Models\User|null $uploadedBy
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDocument approved()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDocument current()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDocument expired()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDocument expiringSoon()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDocument newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDocument newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDocument onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDocument pending()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDocument query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDocument whereApprovedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDocument whereApprovedBy($value)
@@ -604,6 +707,8 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDocument whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDocument whereUploadedBy($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDocument whereVersion($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDocument withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDocument withoutTrashed()
  */
 	class EmployeeDocument extends \Eloquent {}
 }
@@ -616,7 +721,7 @@ namespace App\Models{
  * @property int|null $processed_by
  * @property string $reference_number
  * @property string $period
- * @property string $payment_date
+ * @property \Illuminate\Support\Carbon $payment_date
  * @property int $year
  * @property int $month
  * @property string $type
@@ -628,11 +733,11 @@ namespace App\Models{
  * @property numeric|null $hourly_rate
  * @property int $worked_hours
  * @property int $worked_days
- * @property string|null $earnings
+ * @property array<array-key, mixed>|null $earnings
  * @property numeric $total_earnings
- * @property string|null $deductions
+ * @property array<array-key, mixed>|null $deductions
  * @property numeric $total_deductions
- * @property string|null $benefits
+ * @property array<array-key, mixed>|null $benefits
  * @property numeric $total_benefits
  * @property numeric $overtime_hours
  * @property numeric $overtime_amount
@@ -642,13 +747,13 @@ namespace App\Models{
  * @property numeric $unhealthiness_amount
  * @property numeric $bonus_amount
  * @property numeric $commission_amount
- * @property string|null $commissions_details
+ * @property array<array-key, mixed>|null $commissions_details
  * @property numeric $advance_amount
  * @property numeric $loan_amount
  * @property numeric $fgts_amount
  * @property numeric $inss_employer_amount
  * @property numeric $total_charges
- * @property string|null $taxes
+ * @property array<array-key, mixed>|null $taxes
  * @property numeric $irrf_amount
  * @property numeric $inss_amount
  * @property numeric $total_taxes
@@ -659,20 +764,28 @@ namespace App\Models{
  * @property numeric $vacation_bonus
  * @property numeric $thirteenth_amount
  * @property int|null $thirteenth_installment
- * @property string|null $termination_date
+ * @property \Illuminate\Support\Carbon|null $termination_date
  * @property string|null $termination_type
  * @property numeric|null $termination_amount
- * @property string|null $termination_details
+ * @property array<array-key, mixed>|null $termination_details
  * @property string $status
- * @property string|null $processed_at
+ * @property \Illuminate\Support\Carbon|null $processed_at
  * @property string|null $rejection_reason
  * @property string|null $observations
- * @property string|null $metadata
+ * @property array<array-key, mixed>|null $metadata
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string|null $deleted_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read \App\Models\Department|null $department
+ * @property-read \App\Models\Employee|null $employee
+ * @property-read \App\Models\User|null $processedBy
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payroll forPeriod($year, $month)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Payroll newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Payroll newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payroll ofType($type)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payroll onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payroll paid()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payroll processed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Payroll query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Payroll whereAdvanceAmount($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Payroll whereBaseSalary($value)
@@ -735,6 +848,8 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Payroll whereWorkedDays($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Payroll whereWorkedHours($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Payroll whereYear($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payroll withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payroll withoutTrashed()
  */
 	class Payroll extends \Eloquent {}
 }
@@ -767,6 +882,10 @@ namespace App\Models{
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $actions
+ * @property-read int|null $actions_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
+ * @property-read int|null $activities_as_subject_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Boleto> $boletos
  * @property-read int|null $boletos_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CreditCardTransaction> $creditCardTransactions
@@ -781,6 +900,7 @@ namespace App\Models{
  * @property-read int|null $roles_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Permission\Models\Permission> $teams
  * @property-read int|null $teams_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User active()
  * @method static \Database\Factories\UserFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User newQuery()
@@ -788,6 +908,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User permission($permissions, bool $without = false)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User role($roles, ?string $guard = null, bool $without = false)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User search(string $search)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User team($teams, bool $without = false)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereAlternativeEmail($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereCpf($value)
@@ -822,5 +943,55 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User withoutTrashed()
  */
 	class User extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\EmployeeDocument> $approvedDocuments
+ * @property-read int|null $approved_documents_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Boleto> $boletos
+ * @property-read int|null $boletos_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Boleto> $createdBoletos
+ * @property-read int|null $created_boletos_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CreditCardTransaction> $createdCreditCardTransactions
+ * @property-read int|null $created_credit_card_transactions_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Employee> $createdEmployees
+ * @property-read int|null $created_employees_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CreditCardTransaction> $creditCardTransactions
+ * @property-read int|null $credit_card_transactions_count
+ * @property-read \App\Models\Employee|null $employee
+ * @property-read string $profile
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Department> $managedDepartments
+ * @property-read int|null $managed_departments_count
+ * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
+ * @property-read int|null $notifications_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Permission\Models\Permission> $permissions
+ * @property-read int|null $permissions_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Payroll> $processedPayrolls
+ * @property-read int|null $processed_payrolls_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Permission\Models\Role> $roles
+ * @property-read int|null $roles_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Permission\Models\Permission> $teams
+ * @property-read int|null $teams_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Employee> $updatedEmployees
+ * @property-read int|null $updated_employees_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\EmployeeDocument> $uploadedDocuments
+ * @property-read int|null $uploaded_documents_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserOld active()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserOld newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserOld newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserOld onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserOld permission($permissions, bool $without = false)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserOld query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserOld role($roles, ?string $guard = null, bool $without = false)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserOld search($search)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserOld team($teams, bool $without = false)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserOld withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserOld withoutPermission($permissions)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserOld withoutRole($roles, ?string $guard = null)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserOld withoutTeam($teams)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserOld withoutTrashed()
+ */
+	class UserOld extends \Eloquent {}
 }
 

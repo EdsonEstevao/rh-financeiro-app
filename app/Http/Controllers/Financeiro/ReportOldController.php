@@ -1,5 +1,5 @@
 <?php
-// app/Http/Controllers/Financeiro/ReportController.php
+// app/Http/Controllers/Financeiro/ReportOldController.php
 
 namespace App\Http\Controllers\Financeiro;
 
@@ -12,7 +12,7 @@ use App\Http\Controllers\Controller;
 use App\Models\{Boleto, CreditCardTransaction};
 use App\Services\ReportService;
 
-class ReportController extends Controller
+class ReportOldController extends Controller
 {
     public function __construct(
         private readonly ReportService $reportService

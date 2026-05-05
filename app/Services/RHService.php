@@ -20,15 +20,68 @@ class RHService
         return DB::transaction(function () use ($data) {
             $employee = Employee::create($data);
 
-            // Registrar auditoria
-            $this->auditService->log('employee_created', $employee);
+            // $this->auditService->log('employee_created', $employee->toArray());
+            // ✅ CORRETO - passando array com dados do Employee
+            // $this->auditService->log('Funcionário criado', [
+            //     'employee_id' => $employee->id,
+            //     'name' => $employee->name,
+            //     // outros campos relevantes...
+            // ]);
+            $this->auditService->log('Funcionário criado');
 
-            // Limpar cache relacionado
-            Cache::tags(['employees'])->flush();
+            // Cache::tags(['employees'])->flush();
+            Cache::increment('employees:version');
 
             return $employee;
         });
     }
+
+    protected function getEmployeesCacheVersion(): int
+    {
+        return Cache::get('employees:version', 1);
+    }
+
+    protected function getEmployeesCacheKey(string $suffix): string
+    {
+        $version = $this->getEmployeesCacheVersion();
+        return "employees:{$version}:{$suffix}";
+    }
+
+    public function updateEmployee(Employee $employee, array $data): Employee
+    {
+        return DB::transaction(function () use ($employee, $data) {
+            $employee->fill($data)->save();
+
+            $this->auditService->log('employee_updated', $employee->toArray());
+            // Cache::tags(['employees'])->flush();
+             Cache::increment('employees:version');
+
+            return $employee->refresh();
+        });
+    }
+
+    public function updateEmployeeAdvanced(Employee $employee, array $data): Employee
+    {
+        return DB::transaction(function () use ($employee, $data) {
+            $employee->fill($data)->save();
+
+            $this->auditService->log('employee_advanced_updated', $employee->toArray());
+            // Cache::tags(['employees'])->flush();
+             Cache::increment('employees:version');
+
+            return $employee->refresh();
+        });
+    }
+
+    public function listaFuncionarios()
+    {
+        $key = $this->getEmployeesCacheKey('list_all');
+
+        return Cache::remember($key, 600, function () {
+            return Employee::all();
+        });
+    }
+
 
     public function processMonthlyPayroll(int $departmentId): array
     {

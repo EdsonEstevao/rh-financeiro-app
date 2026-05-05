@@ -6,88 +6,92 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\{Model, SoftDeletes};
 use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
 
+use App\Models\User;
+use App\Traits\LogsActivityCustom;
+
 class Employee extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, LogsActivityCustom;
+
 
     protected $fillable = [
-        'user_id',
-        'department_id',
-        'supervisor_id',
-        'registration_number',
-        'position',
-        'role',
-        'employment_type',
-        'work_schedule',
-        'workload_hours',
-        'salary',
-        'salary_type',
-        'benefits_value',
-        'salary_history',
-        'hire_date',
-        'termination_date',
-        'probation_end_date',
-        'last_promotion_date',
-        'rg',
-        'issuer',
-        'birth_date',
-        'gender',
-        'marital_status',
-        'nationality',
-        'birth_place',
-        'personal_email',
-        'phone',
-        'mobile',
-        'address',
-        'city',
-        'state',
-        'zip_code',
-        'emergency_contact_name',
-        'emergency_contact_phone',
-        'emergency_contact_relationship',
-        'bank_name',
-        'bank_code',
-        'agency',
-        'account',
-        'account_type',
-        'pix_key',
-        'pis_pasep',
-        'ctps',
-        'ctps_serie',
-        'voter_id',
-        'military_id',
-        'photo_url',
-        'has_dependents',
-        'dependents_info',
-        'education_level',
-        'institution',
-        'course',
-        'graduation_year',
-        'has_health_plan',
-        'has_dental_plan',
-        'has_life_insurance',
-        'has_meal_voucher',
-        'has_food_voucher',
-        'has_transportation_voucher',
-        'has_gym_pass',
-        'meal_voucher_value',
-        'food_voucher_value',
-        'transportation_voucher_value',
-        'status',
-        'vacation_start_date',
-        'vacation_end_date',
-        'vacation_days_available',
-        'sick_days_available',
-        'last_evaluation_date',
-        'last_evaluation_score',
-        'evaluation_comments',
-        'observations',
-        'skills',
-        'certifications',
-        'languages',
-        'metadata',
-        'created_by',
-        'updated_by',
+        'user_id', // Relacionamento com User para nome, email, cpf
+        'department_id', // Relacionamento com Department
+        'supervisor_id', // Relacionamento com outro Employee como supervisor
+        'registration_number', // Número de matrícula
+        'position', // Cargo
+        'role', // Função
+        'employment_type', // Tipo de emprego
+        'work_schedule', // Escala de trabalho
+        'workload_hours', // Carga horária
+        'salary', // Salário
+        'salary_type', // Tipo de salário
+        'benefits_value', // Valor dos benefícios
+        'salary_history', // Histórico salarial (JSON)
+        'hire_date', // Data de admissão
+        'termination_date', // Data de demissão
+        'probation_end_date', // Data de término do período de experiência
+        'last_promotion_date', // Data da última promoção
+        'rg', // Registro Geral
+        'issuer', // Órgão emissor
+        'birth_date', // Data de nascimento
+        'gender', // Gênero
+        'marital_status', // Estado civil
+        'nationality', // Nacionalidade
+        'birth_place', // Local de nascimento
+        'personal_email', // E-mail pessoal
+        'phone', // Telefone
+        'mobile', // Celular
+        'address', // Endereço
+        'city', // Cidade
+        'state', // Estado
+        'zip_code', // CEP
+        'emergency_contact_name', // Nome do contato de emergência
+        'emergency_contact_phone', // Telefone do contato de emergência
+        'emergency_contact_relationship', // Relação com o contato de emergência
+        'bank_name', // Nome do banco
+        'bank_code', // Código do banco
+        'agency', // Agência
+        'account', // Conta
+        'account_type', // Tipo de conta
+        'pix_key', // Chave PIX
+        'pis_pasep', // PIS/PASEP
+        'ctps', // Carteira de Trabalho
+        'ctps_serie', // Série da CTPS
+        'voter_id', // Título de Eleitor
+        'military_id', // Identidade militar
+        'photo_url', // URL da foto
+        'has_dependents', // Possui dependentes
+        'dependents_info', // Informações dos dependentes
+        'education_level', // Nível de educação
+        'institution', // Instituição
+        'course', // Curso
+        'graduation_year', // Ano de formação
+        'has_health_plan', // Possui plano de saúde
+        'has_dental_plan', // Possui plano odontológico
+        'has_life_insurance', // Possui seguro de vida
+        'has_meal_voucher', // Possui vale refeição
+        'has_food_voucher', // Possui vale alimentação
+        'has_transportation_voucher', // Possui vale transporte
+        'has_gym_pass', // Possui passagem para academia
+        'meal_voucher_value', // Valor do vale refeição
+        'food_voucher_value', // Valor do vale alimentação
+        'transportation_voucher_value', // Valor do vale transporte
+        'status', // Status do funcionário (ativo, férias, afastado, desligado)
+        'vacation_start_date', // Data de inicio de ferias
+        'vacation_end_date', // Data de fim de ferias
+        'vacation_days_available', // Dias de férias disponíveis
+        'sick_days_available', // Dias de licença médica disponíveis
+        'last_evaluation_date', // Data da última avaliação
+        'last_evaluation_score', // Nota da última avaliação
+        'evaluation_comments', // Comentários da última avaliação
+        'observations', // Observações
+        'skills', // Habilidades
+        'certifications', // Certificação
+        'languages', // Idiomas
+        'metadata', // Metadados
+        'created_by', // Criado por
+        'updated_by', // Atualizado por
     ];
 
     protected $casts = [
@@ -131,7 +135,6 @@ class Employee extends Model
     {
         return $this->belongsTo(User::class);
     }
-
     /**
      * Departamento do funcionário
      */

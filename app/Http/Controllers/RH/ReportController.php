@@ -11,6 +11,7 @@ use App\Http\Controllers\Controller;
 use App\Models\{Department, Employee, Payroll};
 use App\Services\ReportService;
 
+
 class ReportController extends Controller
 {
     public function __construct(
@@ -209,5 +210,4 @@ class ReportController extends Controller
             ]
         ];
     }
-}   //
 }

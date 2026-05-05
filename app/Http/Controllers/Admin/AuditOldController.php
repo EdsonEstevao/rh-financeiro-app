@@ -1,5 +1,5 @@
 <?php
-// app/Http/Controllers/Admin/AuditController.php
+// app/Http/Controllers/Admin/AuditOldController.php
 
 namespace App\Http\Controllers\Admin;
 
@@ -14,7 +14,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 
-class AuditController extends Controller
+class AuditOldController extends Controller
 {
     public function __construct()
     {

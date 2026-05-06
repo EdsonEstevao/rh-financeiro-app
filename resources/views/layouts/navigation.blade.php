@@ -60,6 +60,15 @@
                         <x-nav-link :href="route('financeiro.credit-cards.index')" :active="request()->routeIs('financeiro.credit-cards.*')">
                             {{ __('Credit Cards') }}
                         </x-nav-link>
+                        <x-nav-link :href="route('financeiro.contas-pagar.index')" :active="request()->routeIs('financeiro.contas-pagar.*')">
+                            {{ __('Contas a Pagar') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('financeiro.contas-receber.index')" :active="request()->routeIs('financeiro.contas-receber.*')">
+                            {{ __('Contas a Receber') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('financeiro.fornecedores.index')" :active="request()->routeIs('financeiro.fornecedores.*')">
+                            {{ __('Fornecedores') }}
+                        </x-nav-link>
                     @endhasanyrole
 
                     @role('financeiro')

@@ -233,6 +233,14 @@ class RoleAndPermissionSeeder extends Seeder
             'funcionario.profile.edit',
         ];
 
+        // 8. Permissaõ de Fornecedores
+        $fornecedorPermissions = [
+            'financeiro.fornecedores.view',
+            'financeiro.fornecedores.create',
+            'financeiro.fornecedores.edit',
+            'financeiro.fornecedores.delete',
+        ];
+
         /*
         |--------------------------------------------------------------------------
         | 3. Criação das Permissões
@@ -245,7 +253,8 @@ class RoleAndPermissionSeeder extends Seeder
             $financialPermissions,
             $consultorPermissions,
             $gerentePermissions,
-            $funcionarioPermissions
+            $funcionarioPermissions, 
+            $fornecedorPermissions
         );
 
         foreach ($allPermissions as $permission) {

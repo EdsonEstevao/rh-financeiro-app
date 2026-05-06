@@ -157,6 +157,15 @@
                                 </tr>
                             </thead>
                             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                @php
+                                    $boletoStatusColor = [
+                                        'paid' => 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+                                        'pending' =>
+                                            'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+                                        'overdue' => 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+                                        'cancelled' => 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
+                                    ];
+                                @endphp
                                 @foreach ($boletos as $boleto)
                                     <tr
                                         class="hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150
@@ -210,11 +219,8 @@
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <span
                                                 class="px-3 py-1 text-xs font-semibold rounded-full
-                                                @if ($boleto->status === 'paid') bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
-                                                @elseif($boleto->status === 'pending' && $boleto->isOverdue()) bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
-                                                @elseif($boleto->status === 'pending') bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
-                                                @elseif($boleto->status === 'cancelled') bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200
-                                                @else bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 @endif">
+                                                {{ $boletoStatusColor[$boleto->status] }}
+                                               ">
                                                 @if ($boleto->status === 'paid')
                                                     Pago
                                                 @elseif($boleto->status === 'pending' && $boleto->isOverdue())

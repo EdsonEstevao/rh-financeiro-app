@@ -6,7 +6,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\{DashboardController, ProfileController};
 use App\Http\Controllers\Admin\{AuditController, SettingsController, UserController};
 use App\Http\Controllers\RH\{DocumentController, EmployeeAdvancedController, EmployeeController, PayrollController as RHPayrollController, ReportController as RHReportController, UserSearchController};
-use App\Http\Controllers\Financeiro\{BoletoController, CreditCardController, ReportController as FinanceiroReportController};
+use App\Http\Controllers\Financeiro\{BoletoController, ContasPagarController, ContasReceberController, CreditCardController, FornecedorController, ReportController as FinanceiroReportController};
+use App\Models\ContaReceber;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -160,14 +162,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('boletos/{boleto}/cancel', [BoletoController::class, 'cancel'])->name('boletos.cancel');
             Route::post('boletos/{boleto}/send-email', [BoletoController::class, 'sendByEmail'])->name('boletos.send-email');
 
-            // Cartões de Crédito
-            // Route::resource('credit-cards', CreditCardController::class)->parameters([
-            //     'credit-cards' => 'transaction'
-            // ]);
-            // Route::post('credit-cards/process', [CreditCardController::class, 'processPayment'])->name('credit-cards.process');
-            // Route::post('credit-cards/{transaction}/refund', [CreditCardController::class, 'refund'])->name('credit-cards.refund');
-            // Route::get('credit-cards/{transaction}/receipt', [CreditCardController::class, 'generateReceipt'])->name('credit-cards.receipt');
-            /*
+        /*
         |--------------------------------------------------------------------------
         | Cartões de Crédito
         |--------------------------------------------------------------------------
@@ -216,6 +211,64 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     Route::get('/cash-flow/stream', [FinanceiroReportController::class, 'streamCashFlowPDF'])->name('cash-flow.stream');
                 });
             });
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Contas a Pagar
+        |--------------------------------------------------------------------------
+        */
+        Route::resource('contas-pagar', ContasPagarController::class)
+            ->parameters(['contas-pagar' => 'conta']);
+
+        Route::post('contas-pagar/{conta}/mark-paid', [ContasPagarController::class, 'markAsPaid'])
+            ->name('contas-pagar.mark-paid');
+
+        Route::post('contas-pagar/{conta}/approve', [ContasPagarController::class, 'approve'])
+            ->name('contas-pagar.approve');
+
+        Route::post('contas-pagar/{conta}/cancel', [ContasPagarController::class, 'cancel'])
+            ->name('contas-pagar.cancel');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Contas a Receber
+        |--------------------------------------------------------------------------
+        */
+        Route::resource('contas-receber', ContasReceberController::class)
+            ->parameters(['contas-receber' => 'conta']);
+
+        Route::post('contas-receber/{conta}/mark-received', [ContasReceberController::class, 'markAsReceived'])
+            ->name('contas-receber.mark-received');
+
+        Route::post('contas-receber/{conta}/enviar-cobranca', [ContasReceberController::class, 'enviarCobranca'])
+            ->name('contas-receber.enviar-cobranca');
+
+        Route::post('contas-receber/{conta}/cancel', [ContasReceberController::class, 'cancel'])
+            ->name('contas-receber.cancel');
+
+        // API: Aging de contas a receber
+        Route::get('contas-receber/report/aging', function () {
+            return response()->json(ContaReceber::getAging());
+        })->name('contas-receber.aging');
+
+         /*
+        |--------------------------------------------------------------------------
+        | Fornecedores
+        |--------------------------------------------------------------------------
+        */
+        // Fornecedores
+        Route::resource('fornecedores', FornecedorController::class);
+        
+        Route::post('fornecedores/{fornecedor}/toggle-status', [FornecedorController::class, 'toggleStatus'])
+            ->name('fornecedores.toggle-status');
+        
+        // API: Busca de fornecedores
+        Route::get('api/fornecedores/search', [FornecedorController::class, 'search'])
+            ->name('api.fornecedores.search');
+        
+        Route::get('api/fornecedores/{fornecedor}/details', [FornecedorController::class, 'getDetails'])
+            ->name('api.fornecedores.details');
     });
 
     /*

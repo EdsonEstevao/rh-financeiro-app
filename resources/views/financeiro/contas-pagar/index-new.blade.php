@@ -2,10 +2,10 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                {{ __('Contas a Receber') }}
+                {{ __('Contas a Pagar') }}
             </h2>
             <div class="flex space-x-2">
-                <a href="{{ route('financeiro.contas-receber.create') }}"
+                <a href="{{ route('financeiro.contas-pagar.create') }}"
                     class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium flex items-center">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -22,49 +22,30 @@
             {{-- Summary Cards --}}
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-6">
-                    <p class="text-sm text-gray-500">Total a Receber</p>
-                    <p class="text-2xl font-bold text-blue-600">R$
-                        {{ number_format($stats['valor_abertas'] ?? 0, 2, ',', '.') }}</p>
-                    <p class="text-xs text-gray-500 mt-1">{{ $stats['total_abertas'] ?? 0 }} contas</p>
+                    <p class="text-sm text-gray-500">Total Pendente</p>
+                    <p class="text-2xl font-bold text-yellow-600">R$
+                        {{ number_format($stats['valor_pendente'] ?? 0, 2, ',', '.') }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ $stats['total_pendente'] ?? 0 }} contas</p>
                 </div>
                 <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-6">
                     <p class="text-sm text-gray-500">Vencidas</p>
                     <p class="text-2xl font-bold text-red-600">R$
-                        {{ number_format($stats['valor_vencidas'] ?? 0, 2, ',', '.') }}</p>
-                    <p class="text-xs text-gray-500 mt-1">{{ $stats['total_vencidas'] ?? 0 }} contas</p>
+                        {{ number_format($stats['valor_vencido'] ?? 0, 2, ',', '.') }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ $stats['total_vencido'] ?? 0 }} contas</p>
                 </div>
                 <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-6">
-                    <p class="text-sm text-gray-500">Recebido no Mês</p>
+                    <p class="text-sm text-gray-500">Pago no Mês</p>
                     <p class="text-2xl font-bold text-green-600">R$
-                        {{ number_format($stats['valor_recebido_mes'] ?? 0, 2, ',', '.') }}</p>
-                    <p class="text-xs text-gray-500 mt-1">{{ $stats['total_recebido_mes'] ?? 0 }} contas</p>
+                        {{ number_format($stats['valor_pago_mes'] ?? 0, 2, ',', '.') }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ $stats['total_pago_mes'] ?? 0 }} contas</p>
                 </div>
                 <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-6">
-                    <p class="text-sm text-gray-500">Vencem em 7 dias</p>
-                    <p class="text-2xl font-bold text-yellow-600">R$
-                        {{ number_format($stats['valor_vencem_7_dias'] ?? 0, 2, ',', '.') }}</p>
-                    <p class="text-xs text-gray-500 mt-1">{{ $stats['vencem_7_dias'] ?? 0 }} contas</p>
+                    <p class="text-sm text-gray-500">A Vencer (30 dias)</p>
+                    <p class="text-2xl font-bold text-blue-600">R$
+                        {{ number_format($stats['valor_a_vencer_30_dias'] ?? 0, 2, ',', '.') }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ $stats['a_vencer_30_dias'] ?? 0 }} contas</p>
                 </div>
             </div>
-
-            {{-- Aging --}}
-            @if (isset($aging))
-                <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-6 mb-8">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Aging - Envelhecimento da
-                        Carteira</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-6 gap-4 text-center text-sm">
-                        @foreach (['a_vencer' => 'A Vencer', 'vencidas_1_30' => '1-30 dias', 'vencidas_31_60' => '31-60 dias', 'vencidas_61_90' => '61-90 dias', 'vencidas_91_180' => '91-180 dias', 'vencidas_180_plus' => '180+ dias'] as $key => $label)
-                            <div
-                                class="p-3 rounded-lg {{ $aging[$key]['count'] > 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-gray-50 dark:bg-gray-700' }}">
-                                <p class="text-xs text-gray-500">{{ $label }}</p>
-                                <p class="font-bold {{ $aging[$key]['count'] > 0 ? 'text-red-600' : '' }}">
-                                    {{ $aging[$key]['count'] }}</p>
-                                <p class="text-xs">R$ {{ number_format($aging[$key]['total'], 2, ',', '.') }}</p>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-            @endif
 
             {{-- Filters --}}
             <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg mb-6 p-6">
@@ -74,12 +55,12 @@
                         <select name="status"
                             class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
                             <option value="">Todos</option>
-                            <option value="abertas" {{ request('status') === 'abertas' ? 'selected' : '' }}>Abertas</option>
+                            <option value="pendente" {{ request('status') === 'pendente' ? 'selected' : '' }}>Pendente
+                            </option>
                             <option value="vencidas" {{ request('status') === 'vencidas' ? 'selected' : '' }}>Vencidas
                             </option>
-                            <option value="a_vencer" {{ request('status') === 'a_vencer' ? 'selected' : '' }}>A Vencer
-                            </option>
-                            <option value="recebidas" {{ request('status') === 'recebidas' ? 'selected' : '' }}>Recebidas
+                            <option value="pago" {{ request('status') === 'pago' ? 'selected' : '' }}>Pagas</option>
+                            <option value="cancelado" {{ request('status') === 'cancelado' ? 'selected' : '' }}>Canceladas
                             </option>
                         </select>
                     </div>
@@ -107,7 +88,7 @@
                     <div class="flex space-x-2">
                         <button type="submit"
                             class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md text-sm">Filtrar</button>
-                        <a href="{{ route('financeiro.contas-receber.index') }}"
+                        <a href="{{ route('financeiro.contas-pagar.index') }}"
                             class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md text-sm">Limpar</a>
                     </div>
                 </form>
@@ -121,7 +102,8 @@
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Documento
                                 </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fornecedor
+                                </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Descrição
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Valor</th>
@@ -137,7 +119,8 @@
                                     class="hover:bg-gray-50 dark:hover:bg-gray-700 transition {{ $conta->isOverdue() ? 'bg-red-50 dark:bg-red-900/20' : '' }}">
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         {{ $conta->numero_documento }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm">{{ $conta->cliente_nome }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">{{ $conta->beneficiario_nome }}
+                                    </td>
                                     <td class="px-6 py-4 text-sm max-w-xs truncate">{{ $conta->descricao }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold">R$
                                         {{ number_format($conta->valor_total, 2, ',', '.') }}</td>
@@ -150,13 +133,13 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span
-                                            class="px-2 py-1 text-xs font-semibold rounded-full bg-{{ $conta->status_color }}-100 text-{{ $conta->status_color }}-800 dark:bg-{{ $conta->status_color }}-900 dark:text-{{ $conta->status_color }}-200">
+                                            class="px-2 py-1 text-xs font-semibold rounded-full {{ $conta->status_color_class }}">
                                             {{ $conta->status_label }}
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right">
                                         <div class="flex justify-end space-x-1">
-                                            <a href="{{ route('financeiro.contas-receber.show', $conta) }}"
+                                            <a href="{{ route('financeiro.contas-pagar.show', $conta) }}"
                                                 class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"
                                                 title="Visualizar">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor"
@@ -168,10 +151,10 @@
                                                         d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                 </svg>
                                             </a>
-                                            @if (in_array($conta->status, ['pendente', 'vencido', 'em_cobranca']))
-                                                <button onclick="openReceiveModal({{ $conta->id }})"
+                                            @if (in_array($conta->status, ['pendente', 'aprovado', 'vencido']))
+                                                <button onclick="openPayModal({{ $conta->id }})"
                                                     class="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg"
-                                                    title="Receber">
+                                                    title="Pagar">
                                                     <svg class="w-5 h-5" fill="none" stroke="currentColor"
                                                         viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -182,9 +165,10 @@
                                         </div>
                                     </td>
                                 </tr>
-                            @empty <tr>
+                            @empty
+                                <tr>
                                     <td colspan="7" class="px-6 py-12 text-center text-gray-500">Nenhuma conta a
-                                        receber encontrada.</td>
+                                        pagar encontrada.</td>
                                 </tr>
                             @endforelse
                         </tbody>

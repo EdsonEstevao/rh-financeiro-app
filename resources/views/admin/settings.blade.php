@@ -35,6 +35,10 @@
                                     <option value="America/Manaus"
                                         {{ config('app.timezone') === 'America/Manaus' ? 'selected' : '' }}>Manaus (AMT)
                                     </option>
+                                    <option value="America/Porto_Velho"
+                                        {{ config('app.timezone') === 'America/Porto_Velho' ? 'selected' : '' }}>Porto
+                                        Velho (AMT)
+                                    </option>
                                     <option value="UTC" {{ config('app.timezone') === 'UTC' ? 'selected' : '' }}>UTC
                                     </option>
                                 </select>

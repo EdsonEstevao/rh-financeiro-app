@@ -190,6 +190,182 @@ namespace App\Models{
 namespace App\Models{
 /**
  * @property int $id
+ * @property int|null $fornecedor_id
+ * @property int|null $created_by
+ * @property int|null $approved_by
+ * @property int|null $paid_by
+ * @property string $numero_documento
+ * @property string|null $numero_parcela
+ * @property string|null $nosso_numero
+ * @property string $tipo
+ * @property string|null $categoria
+ * @property string $beneficiario_nome
+ * @property string|null $beneficiario_documento
+ * @property string|null $beneficiario_email
+ * @property string|null $beneficiario_telefone
+ * @property string|null $beneficiario_endereco
+ * @property string|null $banco_codigo
+ * @property string|null $banco_nome
+ * @property string|null $agencia
+ * @property string|null $conta
+ * @property string|null $pix_chave
+ * @property string|null $pix_tipo
+ * @property numeric $valor_original
+ * @property numeric $valor_desconto
+ * @property numeric $valor_multa
+ * @property numeric $valor_juros
+ * @property numeric $valor_acrescimos
+ * @property numeric $valor_total
+ * @property numeric|null $valor_pago
+ * @property \Illuminate\Support\Carbon $data_emissao
+ * @property \Illuminate\Support\Carbon $data_vencimento
+ * @property \Illuminate\Support\Carbon|null $data_competencia
+ * @property \Illuminate\Support\Carbon|null $data_pagamento
+ * @property \Illuminate\Support\Carbon|null $data_aprovacao
+ * @property \Illuminate\Support\Carbon|null $data_conciliacao
+ * @property int|null $parcela_atual
+ * @property int|null $total_parcelas
+ * @property int|null $fatura_id
+ * @property string $status
+ * @property string|null $status_motivo
+ * @property bool $requires_approval
+ * @property string $priority
+ * @property bool $is_recurring
+ * @property string|null $recurrence_rule
+ * @property string $descricao
+ * @property string|null $observacoes
+ * @property string|null $instrucoes_pagamento
+ * @property string|null $boleto_pdf_path
+ * @property string|null $comprovante_path
+ * @property array<array-key, mixed>|null $anexos
+ * @property array<array-key, mixed>|null $tags
+ * @property array<array-key, mixed>|null $metadata
+ * @property string|null $centro_custo
+ * @property string|null $codigo_orcamentario
+ * @property int|null $department_id
+ * @property string|null $codigo_barras
+ * @property string|null $linha_digitavel
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read \App\Models\User|null $approvedBy
+ * @property-read \App\Models\User|null $createdBy
+ * @property-read \App\Models\Department|null $department
+ * @property-read ContaPagar|null $fatura
+ * @property-read \App\Models\Fornecedor|null $fornecedor
+ * @property-read int $dias_atraso
+ * @property-read \App\Models\User|null $paidBy
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, ContaPagar> $parcelas
+ * @property-read int|null $parcelas_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar aVencer()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar mesAtual()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar pagas()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar pendentes()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar vencidas()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereAgencia($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereAnexos($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereApprovedBy($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereBancoCodigo($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereBancoNome($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereBeneficiarioDocumento($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereBeneficiarioEmail($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereBeneficiarioEndereco($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereBeneficiarioNome($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereBeneficiarioTelefone($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereBoletoPdfPath($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereCategoria($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereCentroCusto($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereCodigoBarras($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereCodigoOrcamentario($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereComprovantePath($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereConta($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereCreatedBy($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereDataAprovacao($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereDataCompetencia($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereDataConciliacao($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereDataEmissao($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereDataPagamento($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereDataVencimento($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereDeletedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereDepartmentId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereDescricao($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereFaturaId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereFornecedorId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereInstrucoesPagamento($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereIsRecurring($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereLinhaDigitavel($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereMetadata($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereNossoNumero($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereNumeroDocumento($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereNumeroParcela($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereObservacoes($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar wherePaidBy($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereParcelaAtual($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar wherePixChave($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar wherePixTipo($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar wherePriority($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereRecurrenceRule($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereRequiresApproval($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereStatusMotivo($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereTags($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereTipo($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereTotalParcelas($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereValorAcrescimos($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereValorDesconto($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereValorJuros($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereValorMulta($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereValorOriginal($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereValorPago($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar whereValorTotal($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaPagar withoutTrashed()
+ */
+	class ContaPagar extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * @property-read \App\Models\Boleto|null $boleto
+ * @property-read \App\Models\User|null $cliente
+ * @property-read \App\Models\User|null $consultant
+ * @property-read \App\Models\User|null $createdBy
+ * @property-read \App\Models\CreditCardTransaction|null $creditCardTransaction
+ * @property-read ContaReceber|null $fatura
+ * @property-read int $dias_ate_vencimento
+ * @property-read int $dias_atraso
+ * @property-read string $status_color
+ * @property-read string $status_label
+ * @property-read float $valor_atualizado
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, ContaReceber> $parcelas
+ * @property-read int|null $parcelas_count
+ * @property-read \App\Models\User|null $receivedBy
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaReceber aVencer()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaReceber abertas()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaReceber comissoesPendentes()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaReceber newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaReceber newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaReceber onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaReceber query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaReceber recebidas()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaReceber vencemEm(int $dias)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaReceber vencidas()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaReceber withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContaReceber withoutTrashed()
+ */
+	class ContaReceber extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
  * @property int $user_id
  * @property int|null $created_by
  * @property string $transaction_id
@@ -711,6 +887,21 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDocument withoutTrashed()
  */
 	class EmployeeDocument extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ContaPagar> $contasPagar
+ * @property-read int|null $contas_pagar_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Fornecedor ativos()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Fornecedor newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Fornecedor newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Fornecedor onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Fornecedor query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Fornecedor withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Fornecedor withoutTrashed()
+ */
+	class Fornecedor extends \Eloquent {}
 }
 
 namespace App\Models{

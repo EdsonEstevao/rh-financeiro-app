@@ -81,7 +81,7 @@ class ReportController extends Controller
             ->orderBy('hire_date', 'desc')
             ->get();
 
-        $departments = Department::orderBy('name')->get();
+        $departments = Department::orderBy('name', 'asc')->get();
         $totalSalary = $employees->sum('salary');
 
         return view('rh.reports.employees', compact('employees', 'departments', 'totalSalary'));
@@ -126,7 +126,7 @@ class ReportController extends Controller
         return [
             'employees' => $employees,
             'filters' => [
-                'department' => $request->department ? Department::find($request->department)->name : 'Todos',
+                'department' => $request->department ? Department::query()->find($request->department)->name : 'Todos',
                 'status' => $request->status ?: 'Todos',
                 'date' => now()->format('d/m/Y H:i')
             ],
@@ -154,7 +154,7 @@ class ReportController extends Controller
             })
             ->get();
 
-        $departments = Department::orderBy('name')->get();
+        $departments = Department::orderBy('name', 'asc')->get();
 
         $summary = [
             'total_base_salary' => $payrolls->sum('base_salary'),
@@ -199,7 +199,7 @@ class ReportController extends Controller
             'month' => $month,
             'year' => $year,
             'filters' => [
-                'department' => $request->department ? Department::find($request->department)->name : 'Todos',
+                'department' => $request->department ? Department::query()->find($request->department)->name : 'Todos',
                 'period' => Carbon::createFromDate($year, $month, 1)->format('m/Y')
             ],
             'summary' => [

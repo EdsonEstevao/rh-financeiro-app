@@ -3,7 +3,7 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                {{ __('Relatório de Funcionários') }}
+                Relatório de Funcionários
             </h2>
             <div class="flex space-x-2">
                 <button onclick="window.print()"
@@ -145,6 +145,14 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            @php
+                                $employeeSatusColor = [
+                                    'active' => 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+                                    'vacation' =>
+                                        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+                                    'terminated' => 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+                                ];
+                            @endphp
                             @forelse($employees as $employee)
                                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
                                     <td class="px-6 py-4 whitespace-nowrap">
@@ -182,10 +190,7 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span
-                                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                            @if ($employee->status === 'active') bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
-                                            @elseif($employee->status === 'vacation') bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
-                                            @else bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 @endif">
+                                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $employeeSatusColor[$employee->status] ?? 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200' }}">
                                             {{ ucfirst($employee->status) }}
                                         </span>
                                     </td>

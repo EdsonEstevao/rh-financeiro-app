@@ -126,6 +126,8 @@ class Employee extends Model
         'meal_voucher_value' => 'decimal:2',
         'food_voucher_value' => 'decimal:2',
         'transportation_voucher_value' => 'decimal:2',
+        'deleted_at' => 'datetime',
+
     ];
 
     /**

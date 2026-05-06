@@ -15,6 +15,7 @@
     <div class="py-12">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                @php $employeeStatusColors = ['active' => 'bg-green-100 text-green-800', 'vacation' => 'bg-blue-100 text-blue-800', 'terminated' => 'bg-red-100 text-red-800']; @endphp
                 <div class="md:col-span-1 bg-white dark:bg-gray-800 shadow-sm rounded-lg p-6">
                     <div class="flex flex-col items-center">
                         <div
@@ -24,7 +25,9 @@
                         </h3>
                         <p class="text-sm text-gray-500">{{ $employee->position }}</p>
                         <span
-                            class="mt-2 px-3 py-1 text-xs font-semibold rounded-full @if ($employee->status === 'active') bg-green-100 text-green-800 @elseif($employee->status === 'vacation') bg-blue-100 text-blue-800 @else bg-red-100 text-red-800 @endif">{{ ucfirst($employee->status) }}</span>
+                            class="mt-2 px-3 py-1 text-xs font-semibold rounded-full {{ $employeeStatusColors[$employee->status] ?? 'bg-gray-100 text-gray-800' }}">
+                            {{ ucfirst($employee->status) }}
+                        </span>
                     </div>
                 </div>
                 <div class="md:col-span-2 bg-white dark:bg-gray-800 shadow-sm rounded-lg p-6">

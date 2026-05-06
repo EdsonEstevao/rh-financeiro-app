@@ -5,12 +5,14 @@ namespace App\Http\Controllers\RH;
 
 use Illuminate\Http\{RedirectResponse, Request};
 use Illuminate\View\View;
-use Illuminate\Support\Facades\{Auth, DB};
+use Illuminate\Support\Facades\{Auth, DB, Log};
+use Illuminate\Database\Eloquent\Builder;
 
 use App\Http\Controllers\Controller;
 use App\Models\{Department, Employee};
 use App\Http\Requests\EmployeeRequest;
 use App\Services\RHService;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class EmployeeController extends Controller
 {
@@ -133,7 +135,7 @@ class EmployeeController extends Controller
     {
         $employee->load('user', 'department', 'supervisor');
 
-        $departments = Department::where('is_active', true)->orderBy('name', 'asc')->get();
+        $departments = Department::query()->where('is_active', true)->orderBy('name', 'asc')->get();
         $supervisors = Employee::with('user')
             ->where('status', 'active')
             ->where('id', '!=', $employee->id)
@@ -145,85 +147,11 @@ class EmployeeController extends Controller
     /**
      * Update the specified employee.
      */
-    public function update(Request $request, Employee $employee): RedirectResponse
+    public function update(EmployeeRequest $request, Employee $employee): RedirectResponse
     {
-        $validated = $request->validate([
-            // Dados do usuário
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'unique:users,email,' . $employee->user_id],
-            'cpf' => ['required', 'string', 'max:14', 'unique:users,cpf,' . $employee->user_id],
-            'phone' => ['nullable', 'string', 'max:20'],
+         $this->rhService->updateEmployee($employee, $request->validated());
 
-            // Dados profissionais
-            'position' => ['required', 'string', 'max:100'],
-            'department_id' => ['required', 'exists:departments,id'],
-            'supervisor_id' => ['nullable', 'exists:employees,id'],
-            'salary' => ['required', 'numeric', 'min:0'],
-            'status' => ['required', 'in:active,inactive,vacation,leave,terminated,suspended'],
-            'employment_type' => ['required', 'in:clt,pj,intern,temporary,contractor'],
-            'workload_hours' => ['nullable', 'integer', 'min:0', 'max:44'],
-
-            // Datas
-            'termination_date' => ['nullable', 'date', 'required_if:status,terminated'],
-            'vacation_start_date' => ['nullable', 'date', 'required_if:status,vacation'],
-            'vacation_end_date' => ['nullable', 'date', 'after:vacation_start_date'],
-
-            // Observações
-            'observations' => ['nullable', 'string', 'max:2000'],
-        ]);
-
-        try {
-            DB::beginTransaction();
-
-            // Atualizar usuário
-            $employee->user->update([
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-                'cpf' => $validated['cpf'],
-                'phone' => $validated['phone'],
-            ]);
-
-            // Registrar histórico salarial se houve mudança
-            if ($employee->salary != $validated['salary']) {
-                $salaryHistory = $employee->salary_history ?? [];
-                $salaryHistory[] = [
-                    'previous_salary' => $employee->salary,
-                    'new_salary' => $validated['salary'],
-                    'changed_at' => now()->toDateTimeString(),
-                    'changed_by' => Auth::id(),
-                ];
-                $validated['salary_history'] = $salaryHistory;
-            }
-
-            // Atualizar funcionário
-            $employee->update(array_merge($validated, [
-                'updated_by' => Auth::id(),
-            ]));
-
-            DB::commit();
-
-            activity()
-                ->performedOn($employee)
-                ->causedBy(Auth::user())
-                ->withProperties(['changes' => $validated])
-                ->log('Funcionário atualizado');
-
-            return redirect()
-                ->route('rh.employees.show', $employee)
-                ->with('success', 'Funcionário atualizado com sucesso!');
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            Log::error('Failed to update employee', [
-                'error' => $e->getMessage(),
-                'employee_id' => $employee->id
-            ]);
-
-            return back()
-                ->withInput()
-                ->with('error', 'Erro ao atualizar funcionário.');
-        }
+        return back()->with('success', 'Dados básicos atualizados.');
     }
 
     /**
@@ -234,13 +162,13 @@ class EmployeeController extends Controller
         try {
             DB::beginTransaction();
 
-            $userName = $employee->user->name;
+            $userName = $employee->user?->name ?? 'N/A';
 
             // Soft delete do funcionário
-            $employee->delete();
+            Employee::destroy($employee->id);
 
-            // Desativar usuário
-            $employee->user->update(['is_active' => false]);
+            // Desativar usuário (se existir)
+            $employee->user()->update(['is_active' => false]);
 
             DB::commit();
 
@@ -256,7 +184,7 @@ class EmployeeController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            Log::error('Failed to delete employee', [
+            \Log::error('Failed to delete employee', [
                 'error' => $e->getMessage(),
                 'employee_id' => $employee->id
             ]);
@@ -264,6 +192,7 @@ class EmployeeController extends Controller
             return back()->with('error', 'Erro ao desligar funcionário.');
         }
     }
+
 
     /**
      * Restore a soft-deleted employee.
@@ -276,15 +205,9 @@ class EmployeeController extends Controller
             DB::beginTransaction();
 
             $employee->restore();
-            // $employee->user->update(['is_active' => true]);
 
-            $employee->employee->user->update(['is_active' => true]);
-            // if ($employee->employee) {
-            //     $employee->employee()->withTrashed()->restore();
-            //     $employee->employee()->update(['is_active' => true]);
-            // }
-
-
+            // Reativar usuário (se existir) - CORRIGIDO
+            $employee->user()->update(['is_active' => true]);
 
             DB::commit();
 
@@ -310,23 +233,56 @@ class EmployeeController extends Controller
     /**
      * Export employees to PDF.
      */
+    // public function exportPDF(Request $request)
+    // {
+    //     $query = Employee::with(['user', 'department']);
+
+    //     if (Auth::user()->hasRole('gerente')) {
+    //         $query->where('department_id', Auth::user()->employee?->department_id);
+    //     }
+
+    //     $this->applyFilters($query, $request);
+    //     $employees = $query->get();
+
+    //     $pdf = PDF::loadView('rh.reports.pdfs.employees', [
+    //         'employees' => $employees,
+    //         'generated_at' => now()->format('d/m/Y H:i')
+    //     ]);
+
+    //     $pdf->setPaper('a4', 'landscape');
+
+    //     return $pdf->download('funcionarios-' . now()->format('d-m-Y') . '.pdf');
+    // }
     public function exportPDF(Request $request)
     {
-        $query = Employee::with(['user', 'department']);
+        $query = Employee::query()->with(['user', 'department']);
 
         if (Auth::user()->hasRole('gerente')) {
             $query->where('department_id', Auth::user()->employee?->department_id);
         }
 
         $this->applyFilters($query, $request);
+
         $employees = $query->get();
 
-        $pdf = \PDF::loadView('rh.employees.pdf', [
-            'employees' => $employees,
-            'generated_at' => now()->format('d/m/Y H:i')
-        ]);
+        $filters = [
+            'department' => $request->filled('department') ? (string) $request->department : 'Todos',
+            'status'     => $request->filled('status') ? (string) $request->status : 'Todos',
+            'date'       => now()->format('d/m/Y H:i'),
+        ];
 
-        $pdf->setPaper('a4', 'landscape');
+        $stats = [
+            'total_employees'  => $employees->count(),
+            'active_employees' => $employees->where('status', 'active')->count(),
+            'total_salary'     => (float) $employees->sum('salary'),
+        ];
+
+        $pdf = Pdf::loadView('rh.reports.pdfs.employees', [
+            'employees'    => $employees,
+            'filters'      => $filters,
+            'stats'        => $stats,
+            'generated_at' => $filters['date'],
+        ])->setPaper('a4', 'landscape');
 
         return $pdf->download('funcionarios-' . now()->format('d-m-Y') . '.pdf');
     }
@@ -336,7 +292,7 @@ class EmployeeController extends Controller
      */
     public function search(Request $request): \Illuminate\Http\JsonResponse
     {
-        $search = $request->get('q');
+        $search = $request->input('q');
 
         $employees = Employee::with('user')
             ->where(function ($q) use ($search) {
@@ -362,7 +318,7 @@ class EmployeeController extends Controller
     /**
      * Apply filters to query.
      */
-    private function applyFilters($query, Request $request): void
+    private function applyFilters(Builder $query, Request $request): void
     {
         $query->when($request->filled('search'), function ($q) use ($request) {
             $q->where(function ($sq) use ($request) {

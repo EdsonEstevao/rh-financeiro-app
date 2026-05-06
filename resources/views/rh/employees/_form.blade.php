@@ -1,29 +1,29 @@
 {{-- resources/views/rh/employees/_form.blade.php --}}
-@php
-    /** @var \App\Models\Employee|null $employee */
-
-    $isEdit = ($mode ?? 'create') === 'edit';
-
-    // Helper para obter valor com old() + fallback no employee
-    $val = function (string $key, $default = null) use ($employee) {
-        $employeeValue = data_get($employee, $key, $default);
-        return old($key, $employeeValue);
-    };
-
-    // Para JSONs (skills, languages, certifications): garantir array
-    $arr = function (string $key) use ($val) {
-        $v = $val($key);
-        if (is_string($v)) {
-            return array_values(array_filter(array_map('trim', explode(',', $v))));
-        }
-        if (is_array($v)) {
-            return $v;
-        }
-        return $v ? (array) $v : [];
-    };
-@endphp
-
 <div class="space-y-6">
+    @php
+        /** @var \App\Models\Employee|null $employee */
+
+        $isEdit = ($mode ?? 'create') === 'edit';
+        $employee = $employee ?? null;
+
+        // Helper para obter valor com old() + fallback no employee
+        $val = function (string $key, $default = null) use ($employee) {
+            $employeeValue = data_get($employee, $key, $default);
+            return old($key, $employeeValue);
+        };
+
+        // Para JSONs (skills, languages, certifications): garantir array
+        $arr = function (string $key) use ($val) {
+            $v = $val($key);
+            if (is_string($v)) {
+                return array_values(array_filter(array_map('trim', explode(',', $v))));
+            }
+            if (is_array($v)) {
+                return $v;
+            }
+            return $v ? (array) $v : [];
+        };
+    @endphp
 
     {{-- Identificação / Relacionamentos --}}
     <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-6">

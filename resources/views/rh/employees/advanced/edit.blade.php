@@ -1,4 +1,7 @@
 <x-app-layout>
+    @php
+        /** @var \App\Models\Employee $employee */
+    @endphp
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
@@ -13,6 +16,7 @@
     </x-slot>
 
     @php
+
         $val = fn(string $k, $d = null) => old($k, data_get($employee, $k, $d));
 
         // Dependentes: garantir array
@@ -38,21 +42,21 @@
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">RG</label>
-                            <input type="text" name="rg" maxlength="20" value="{{ $val('rg') }}"
+                            <input type="text" name="rg" maxlength="20" value="{{ $val('rg', null) }}"
                                 class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm">
                         </div>
 
                         <div>
                             <label
                                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Emissor</label>
-                            <input type="text" name="issuer" maxlength="20" value="{{ $val('issuer') }}"
+                            <input type="text" name="issuer" maxlength="20" value="{{ $val('issuer', null) }}"
                                 class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm">
                         </div>
 
                         <div>
                             <label
                                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nascimento</label>
-                            <input type="date" name="birth_date" value="{{ $val('birth_date') }}"
+                            <input type="date" name="birth_date" value="{{ $val('birth_date', null) }}"
                                 class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm">
                         </div>
 
@@ -63,7 +67,7 @@
                                 class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm">
                                 <option value="">—</option>
                                 @foreach (['male' => 'Masculino', 'female' => 'Feminino', 'other' => 'Outro'] as $k => $label)
-                                    <option value="{{ $k }}" @selected($val('gender') === $k)>{{ $label }}
+                                    <option value="{{ $k }}" @selected($val('gender', null) === $k)>{{ $label }}
                                     </option>
                                 @endforeach
                             </select>
@@ -76,7 +80,7 @@
                                 class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm">
                                 <option value="">—</option>
                                 @foreach (['single' => 'Solteiro(a)', 'married' => 'Casado(a)', 'divorced' => 'Divorciado(a)', 'widowed' => 'Viúvo(a)', 'stable_union' => 'União estável'] as $k => $label)
-                                    <option value="{{ $k }}" @selected($val('marital_status') === $k)>{{ $label }}
+                                    <option value="{{ $k }}" @selected($val('marital_status', null) === $k)>{{ $label }}
                                     </option>
                                 @endforeach
                             </select>
@@ -93,7 +97,8 @@
                         <div class="md:col-span-2">
                             <label
                                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Naturalidade</label>
-                            <input type="text" name="birth_place" maxlength="100" value="{{ $val('birth_place') }}"
+                            <input type="text" name="birth_place" maxlength="100"
+                                value="{{ $val('birth_place', null) }}"
                                 class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm">
                         </div>
                     </div>
@@ -108,19 +113,19 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email
                                 pessoal</label>
                             <input type="email" name="personal_email" maxlength="100"
-                                value="{{ $val('personal_email') }}"
+                                value="{{ $val('personal_email', null) }}"
                                 class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm">
                         </div>
                         <div>
                             <label
                                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Telefone</label>
-                            <input type="text" name="phone" maxlength="20" value="{{ $val('phone') }}"
+                            <input type="text" name="phone" maxlength="20" value="{{ $val('phone', null) }}"
                                 class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm">
                         </div>
                         <div>
                             <label
                                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Celular</label>
-                            <input type="text" name="mobile" maxlength="20" value="{{ $val('mobile') }}"
+                            <input type="text" name="mobile" maxlength="20" value="{{ $val('mobile', null) }}"
                                 x-mask="99 9 9999-9999"
                                 class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm">
                         </div>
@@ -129,23 +134,23 @@
                             <label
                                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Endereço</label>
                             <textarea name="address" rows="2"
-                                class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm">{{ $val('address') }}</textarea>
+                                class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm">{{ $val('address', null) }}</textarea>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">CEP</label>
-                            <input type="text" name="zip_code" maxlength="10" value="{{ $val('zip_code') }}"
+                            <input type="text" name="zip_code" maxlength="10" value="{{ $val('zip_code', null) }}"
                                 x-mask="99.999-999"
                                 class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm">
                         </div>
                         <div>
                             <label
                                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cidade</label>
-                            <input type="text" name="city" maxlength="100" value="{{ $val('city') }}"
+                            <input type="text" name="city" maxlength="100" value="{{ $val('city', null) }}"
                                 class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">UF</label>
-                            <input type="text" name="state" maxlength="2" value="{{ $val('state') }}"
+                            <input type="text" name="state" maxlength="2" value="{{ $val('state', null) }}"
                                 class="w-full uppercase rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm">
                         </div>
                     </div>
@@ -213,37 +218,42 @@
                         <div>
                             <label
                                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Banco</label>
-                            <input type="text" name="bank_name" maxlength="50" value="{{ $val('bank_name') }}"
+                            <input type="text" name="bank_name" maxlength="50"
+                                value="{{ $val('bank_name', null) }}"
                                 class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm">
                         </div>
                         <div>
                             <label
                                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Código</label>
-                            <input type="text" name="bank_code" maxlength="10" value="{{ $val('bank_code') }}"
+                            <input type="text" name="bank_code" maxlength="10"
+                                value="{{ $val('bank_code', null) }}"
                                 class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">PIX</label>
-                            <input type="text" name="pix_key" maxlength="100" value="{{ $val('pix_key') }}"
+                            <input type="text" name="pix_key" maxlength="100"
+                                value="{{ $val('pix_key', null) }}"
                                 class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm">
                         </div>
 
                         <div>
                             <label
                                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">PIS/PASEP</label>
-                            <input type="text" name="pis_pasep" maxlength="20" value="{{ $val('pis_pasep') }}"
+                            <input type="text" name="pis_pasep" maxlength="20"
+                                value="{{ $val('pis_pasep', null) }}"
                                 class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm"
                                 x-mask="999.99999.99-9">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">CTPS</label>
-                            <input type="text" name="ctps" maxlength="20" value="{{ $val('ctps') }}"
+                            <input type="text" name="ctps" maxlength="20" value="{{ $val('ctps', null) }}"
                                 class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">CTPS
                                 Série</label>
-                            <input type="text" name="ctps_serie" maxlength="20" value="{{ $val('ctps_serie') }}"
+                            <input type="text" name="ctps_serie" maxlength="20"
+                                value="{{ $val('ctps_serie', null) }}"
                                 class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm">
                         </div>
 
@@ -262,7 +272,7 @@
         'master' => 'Mestrado',
         'doctorate' => 'Doutorado',
     ] as $k => $label)
-                                    <option value="{{ $k }}" @selected($val('education_level') === $k)>
+                                    <option value="{{ $k }}" @selected($val('education_level', null) === $k)>
                                         {{ $label }}</option>
                                 @endforeach
                             </select>
@@ -271,13 +281,13 @@
                             <label
                                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Instituição</label>
                             <input type="text" name="institution" maxlength="100"
-                                value="{{ $val('institution') }}"
+                                value="{{ $val('institution', null) }}"
                                 class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm">
                         </div>
                         <div>
                             <label
                                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Curso</label>
-                            <input type="text" name="course" maxlength="100" value="{{ $val('course') }}"
+                            <input type="text" name="course" maxlength="100" value="{{ $val('course', null) }}"
                                 class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm">
                         </div>
                     </div>
@@ -288,7 +298,7 @@
                                 Habilidades
                                 (JSON)</label>
                             <textarea name="skills" rows="3"
-                                class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm">{{ is_string($val('skills')) ? $val('skills') : json_encode($val('skills'), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</textarea>
+                                class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm">{{ is_string($val('skills', null)) ? $val('skills', null) : json_encode($val('skills', null), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</textarea>
                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Envie como JSON array, ex:
                                 ["Excel","SQL"]</p>
                         </div>
@@ -297,7 +307,7 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Metadata
                                 (JSON)</label>
                             <textarea name="metadata" rows="3"
-                                class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm">{{ is_string($val('metadata')) ? $val('metadata') : json_encode($val('metadata'), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</textarea>
+                                class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm">{{ is_string($val('metadata', null)) ? $val('metadata', null) : json_encode($val('metadata', null), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</textarea>
                         </div>
                     </div>
                 </div>
